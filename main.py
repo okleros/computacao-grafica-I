@@ -1,6 +1,6 @@
 import pygame
 from collections import deque
-from math import floor, ceil
+from math import floor, ceil, sin, cos
 from numbers import Number as number
 
 # Define the Color class
@@ -25,12 +25,12 @@ class Color:
         return p
 
     def __round__(self):
-        p = Color(round(self.r), round(self.g), round(self.b))
+        p = Color(round(self.r), round(self.g), round(self.b), round(self.a))
 
         return p
 
     def __floor__(self):
-        p = Color(floor(self.r), floor(self.g), floor(self.b))
+        p = Color(floor(self.r), floor(self.g), floor(self.b), round(self.a))
 
         return p
     
@@ -44,20 +44,31 @@ WIDTH = HEIGHT = 700
 
 # Initialize Pygame and create the screen
 pygame.init()
+
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 # Set the caption for the window
 pygame.display.set_caption("Computer Graphics is fun!")
 
-# Define the setpixel function
+def normalize(p: tuple) -> tuple:
+    x = min(max(p[0], 0), WIDTH - 1)
+    y = min(max(p[1], 0), HEIGHT - 1)
+
+    return (x, y)
+
 def setpixel(p: tuple, color: Color) -> None:
+    p = normalize(p)
+
     pygame_color = pygame.Color(color.r, color.g, color.b, color.a)
     screen.set_at(p, pygame_color)
 
 def getpixel(p: tuple) -> Color:
+    p = normalize(p)
+
     pygame_color = screen.get_at(p)
     return Color(pygame_color.r, pygame_color.g, pygame_color.b, pygame_color.a)
 
+# Default useful color macros
 WHITE = Color(255, 255, 255)
 BLACK = Color(0, 0, 0)
 RED = Color(255, 0, 0)
@@ -124,6 +135,7 @@ def DDAAA(pi: tuple, pf: tuple, color: Color) -> None:
             setpixel((floor(x), round(y)), round((1 - xd) * color))
             setpixel((floor(x + 1), round(y)), round(xd * color))
 
+# bresenham currently not working for angled lines over 45 degrees
 def bresenham(pi: tuple, pf: tuple, color: Color) -> None:
     trocou = False
 
@@ -172,6 +184,17 @@ def bresenham(pi: tuple, pf: tuple, color: Color) -> None:
         else:
             p += dy2
 
+def senoid(color: Color) -> None:
+    xant = 0
+    yant = (HEIGHT / 2) + (100 * sin(xant * 0.05))
+
+    for x in range(1, WIDTH):
+        y = HEIGHT / 2 + 100 * sin(x * 0.05)
+        DDAAA((xant, yant), (x, y), color)
+
+        xant = x
+        yant = y
+
 class Polygon:
     __vertices = None
 
@@ -210,6 +233,7 @@ class Polygon:
         DDA((x, y), (self.__vertices[0][0], self.__vertices[0][1]), color)
 
 def floodFill(p: tuple, color: Color) -> None:
+    p = normalize(p)
     
     def isValid(p: tuple, icolor: Color) -> bool:
         if (p[0] < 0):
@@ -245,7 +269,6 @@ def floodFill(p: tuple, color: Color) -> None:
 
         if isValid(pixel, icolor):
             setpixel(pixel, color)
-            #print("pixel set at ", pixel)
 
             north = (x, y - 1)
             south = (x, y + 1)
@@ -275,11 +298,15 @@ def main():
     pol.addVertex((180, HEIGHT - 180))
 
     pol.draw(YELLOW)
+    senoid(RED)
+
+    setpixel((-5, -5), GREEN)
+    setpixel((800, 800), MAGENTA)
 
     pygame.display.flip()
 
     floodFill((int(WIDTH / 2), int(HEIGHT / 2) + 150), CYAN)
-    floodFill((int(WIDTH / 2), int(HEIGHT - 1)), MAGENTA)
+    floodFill((int(WIDTH / 2), int(HEIGHT)), MAGENTA)
 
     # Update the screen
     pygame.display.flip()
@@ -289,7 +316,7 @@ def main():
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.image.save(screen, "./output2.bmp")
+                pygame.image.save(screen, "./output2.png")
                 running = False
     
     # Quit Pygame
