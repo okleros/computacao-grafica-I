@@ -3,15 +3,6 @@ from collections import deque
 from math import floor, ceil
 from numbers import Number as number
 
-WIDTH = HEIGHT = 700
-
-# Initialize Pygame and create the screen
-pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-
-# Set the caption for the window
-pygame.display.set_caption("Computer Graphics is fun!")
-
 # Define the Color class
 class Color:
     def __init__(self, r: int, g: int, b: int, a: int = 255) -> None:
@@ -49,16 +40,32 @@ class Color:
 
         return False
 
-WHITE = Color(255, 255, 255)
-BLACK = Color(0, 0, 0)
-RED = Color(255, 0, 0)
-GREEN = Color(0, 255, 0)
-BLUE = Color(0, 0, 255)
+WIDTH = HEIGHT = 700
+
+# Initialize Pygame and create the screen
+pygame.init()
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+
+# Set the caption for the window
+pygame.display.set_caption("Computer Graphics is fun!")
 
 # Define the setpixel function
 def setpixel(p: tuple, color: Color) -> None:
     pygame_color = pygame.Color(color.r, color.g, color.b, color.a)
     screen.set_at(p, pygame_color)
+
+def getpixel(p: tuple) -> Color:
+    pygame_color = screen.get_at(p)
+    return Color(pygame_color.r, pygame_color.g, pygame_color.b, pygame_color.a)
+
+WHITE = Color(255, 255, 255)
+BLACK = Color(0, 0, 0)
+RED = Color(255, 0, 0)
+GREEN = Color(0, 255, 0)
+BLUE = Color(0, 0, 255)
+CYAN = Color(0, 255, 255)
+MAGENTA = Color(255, 0, 255)
+YELLOW = Color(255, 255, 0)
 
 def DDA(pi: tuple, pf: tuple, color: Color) -> None:
     xi = pi[0]
@@ -117,6 +124,54 @@ def DDAAA(pi: tuple, pf: tuple, color: Color) -> None:
             setpixel((floor(x), round(y)), round((1 - xd) * color))
             setpixel((floor(x + 1), round(y)), round(xd * color))
 
+def bresenham(pi: tuple, pf: tuple, color: Color) -> None:
+    trocou = False
+
+    xi = pi[0]
+    xf = pf[0]
+    yi = pi[1]
+    yf = pf[1]
+
+    dx = xf - xi
+    dy = yf - yi
+
+    if dy > dx:
+        aux = dx
+        dx = dy
+        dy = aux
+        aux = xi
+        xi = yi
+        yi = aux
+
+        trocou = True
+
+    dx2 = 2 * dx
+    dy2 = 2 * dy
+
+    p  = - dx + dy2
+
+    x = round(xi)
+    y = round(yi)
+
+    print(x, y)
+
+    for i in range(round(abs(dx)) + 1):
+        if trocou:
+            setpixel((x, y), color)
+
+        else:
+            setpixel((y, x), color)
+
+        x += 1
+
+        if p > 0:
+            y += 1
+
+            p = p - dx2 + dy2
+
+        else:
+            p += dy2
+
 class Polygon:
     __vertices = None
 
@@ -153,10 +208,6 @@ class Polygon:
             y = proy
 
         DDA((x, y), (self.__vertices[0][0], self.__vertices[0][1]), color)
-
-def getpixel(p: tuple) -> Color:
-    pygame_color = screen.get_at(p)
-    return Color(pygame_color.r, pygame_color.g, pygame_color.b, pygame_color.a)
 
 def floodFill(p: tuple, color: Color) -> None:
     
@@ -213,7 +264,6 @@ def floodFill(p: tuple, color: Color) -> None:
             if isValid(west, icolor):
                 stack.append(west)
 
-    print('done')
 
 def main():
     pol = Polygon()
@@ -224,12 +274,12 @@ def main():
     pol.addVertex((WIDTH - 180, HEIGHT - 180))
     pol.addVertex((180, HEIGHT - 180))
 
-    pol.draw(RED)
+    pol.draw(YELLOW)
 
     pygame.display.flip()
 
-    floodFill((int(WIDTH / 2), int(HEIGHT / 2) + 150), Color(0, 255, 255))
-    #floodFill((int(WIDTH / 2), int(HEIGHT - 1)), Color(255, 0, 0))
+    floodFill((int(WIDTH / 2), int(HEIGHT / 2) + 150), CYAN)
+    floodFill((int(WIDTH / 2), int(HEIGHT - 1)), MAGENTA)
 
     # Update the screen
     pygame.display.flip()
