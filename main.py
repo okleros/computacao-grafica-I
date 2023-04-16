@@ -13,7 +13,7 @@ pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 # Set the caption for the window
-pygame.display.set_caption("Pixel Screen")
+pygame.display.set_caption("Computer Graphics is fun!")
 
 # Define the Color class
 class Color:
