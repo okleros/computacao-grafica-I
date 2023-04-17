@@ -51,15 +51,15 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Computer Graphics is fun!")
 
 def normalize(p: tuple) -> tuple:
-    x = min(max(p[0], 0), WIDTH - 1)
-    y = min(max(p[1], 0), HEIGHT - 1)
+    x = int(min(max(p[0], 0), WIDTH - 1))
+    y = int(min(max(p[1], 0), HEIGHT - 1))
 
     return (x, y)
 
 def setpixel(p: tuple, color: Color) -> None:
     p = normalize(p)
 
-    pygame_color = pygame.Color(color.r, color.g, color.b, color.a)
+    pygame_color = pygame.Color(int(color.r), int(color.g), int(color.b), int(color.a))
     screen.set_at(p, pygame_color)
 
 def getpixel(p: tuple) -> Color:
@@ -120,14 +120,14 @@ def DDAAA(pi: tuple, pf: tuple, color: Color) -> None:
     stepx = dx / steps
     stepy = dy / steps
 
-    for i in range(round(steps) + 1):
+    for i in range(int(steps) + 1):
         x = xi + i * stepx
         y = yi + i * stepy
 
         if abs(stepx) == 1:
             yd = y - floor(y)
 
-            setpixel((round(x), floor(y)), round(1 - yd) * color)
+            setpixel((round(x), floor(y)), round((1 - yd) * color))
             setpixel((round(x), floor(y + 1)), round(yd * color))
         else:
             xd = x - floor(x)
@@ -136,64 +136,115 @@ def DDAAA(pi: tuple, pf: tuple, color: Color) -> None:
             setpixel((floor(x + 1), round(y)), round(xd * color))
 
 # bresenham currently not working for angled lines over 45 degrees
-def bresenham(pi: tuple, pf: tuple, color: Color) -> None:
-    trocou = False
-
+def bresenhamm(pi: tuple, pf: tuple, color: Color) -> None:
     xi = pi[0]
     xf = pf[0]
     yi = pi[1]
     yf = pf[1]
 
-    dx = xf - xi
-    dy = yf - yi
+    dx = abs(xf - xi)
+    dy = abs(yf - yi)
 
-    if dy > dx:
-        aux = dx
-        dx = dy
-        dy = aux
-        aux = xi
-        xi = yi
-        yi = aux
+    p  = 2 * dy - dx
 
-        trocou = True
-
-    dx2 = 2 * dx
     dy2 = 2 * dy
+    dx2 = 2 * (dy - dx)
 
-    p  = - dx + dy2
+    if xi > xf:
+        x = xf
+        y = yf
+        x_end = xi
+    
+    else:
+        x = xi
+        y = yi
+        x_end = xf
 
-    x = round(xi)
-    y = round(yi)
+    setpixel((x, y), color)
 
-    print(x, y)
-
-    for i in range(round(abs(dx)) + 1):
-        if trocou:
-            setpixel((x, y), color)
-
-        else:
-            setpixel((y, x), color)
-
+    while x < x_end:
         x += 1
 
-        if p > 0:
-            y += 1
-
-            p = p - dx2 + dy2
-
-        else:
+        if p < 0:
             p += dy2
+        
+        else:
+            y += 1
+            p += dx2
+
+        setpixel((x, y), color)
+
+def bresenham(p1, p2, color) -> None:
+    x1 = p1[0]
+    x2 = p2[0]
+    y1 = p1[1]
+    y2 = p2[1]
+
+    dx = abs(x2 - x1)
+    dy = abs(y2 - y1)
+    sx = -1 if x1 > x2 else 1
+    sy = -1 if y1 > y2 else 1
+    err = dx - dy
+    
+    while True:
+        setpixel((x1, y1), color)
+        
+        if x1 == x2 and y1 == y2:
+            break
+        
+        e2 = 2 * err
+        if e2 > -dy:
+            err -= dy
+            x1 += sx
+        if e2 < dx:
+            err += dx
+            y1 += sy
 
 def senoid(color: Color) -> None:
     xant = 0
     yant = (HEIGHT / 2) + (100 * sin(xant * 0.05))
 
     for x in range(1, WIDTH):
-        y = HEIGHT / 2 + 100 * sin(x * 0.05)
-        DDAAA((xant, yant), (x, y), color)
+        y = int(HEIGHT / 2 + 100 * sin(x * 0.05))
+        bresenham((xant, yant), (x, y), color)
 
         xant = x
         yant = y
+
+def circle(c: tuple, r: number, color: Color) -> None:
+    def plot(c: tuple, p: tuple, color: Color) -> None:
+        xp = p[0]
+        yp = p[1]
+        xc = c[0]
+        yc = c[1]
+
+        setpixel((xc + x, yc + y), color)
+        setpixel((xc - x, yc + y), color)
+        setpixel((xc + x, yc - y), color)
+        setpixel((xc - x, yc - y), color)
+        setpixel((xc + y, yc + x), color)
+        setpixel((xc - y, yc + x), color)
+        setpixel((xc + y, yc - x), color)
+        setpixel((xc - y, yc - x), color)
+
+    x = 0
+    y = r
+    p = 3 - 2 * r
+
+    while x < y:
+        plot(c, (x, y), color)
+
+        if p < 0:
+            p = p + 4 * x + 6
+
+        else:
+            p = p + 4 * (x - y) + 10
+            y -= 1
+
+        x += 1
+
+    if x == y:
+        plot(c, (x, y), color)
 
 class Polygon:
     __vertices = None
@@ -225,12 +276,12 @@ class Polygon:
             prox = self.__vertices[i][0]
             proy = self.__vertices[i][1]
 
-            DDA((x, y), (prox, proy), color)
+            bresenham((x, y), (prox, proy), color)
 
             x = prox
             y = proy
 
-        DDA((x, y), (self.__vertices[0][0], self.__vertices[0][1]), color)
+        bresenham((x, y), (self.__vertices[0][0], self.__vertices[0][1]), color)
 
 def floodFill(p: tuple, color: Color) -> None:
     p = normalize(p)
@@ -289,23 +340,31 @@ def floodFill(p: tuple, color: Color) -> None:
 
 
 def main():
-    pol = Polygon()
+    # pol = Polygon()
 
-    pol.addVertex((100, 200))
-    pol.addVertex((WIDTH / 2, 50))
-    pol.addVertex((WIDTH - 100, 200))
-    pol.addVertex((WIDTH - 180, HEIGHT - 180))
-    pol.addVertex((180, HEIGHT - 180))
+    # pol.addVertex((100, 200))
+    # pol.addVertex((WIDTH / 2, 50))
+    # pol.addVertex((WIDTH - 100, 200))
+    # pol.addVertex((WIDTH - 180, HEIGHT - 180))
+    # pol.addVertex((180, HEIGHT - 180))
 
-    pol.draw(YELLOW)
-    senoid(RED)
+    # pol.draw(YELLOW)
+    # senoid(RED)
 
-    setpixel((-5, -5), GREEN)
-    setpixel((800, 800), MAGENTA)
+    # setpixel((-5, -5), GREEN)
+    # setpixel((800, 800), MAGENTA)
+
+    # for i in range(0, WIDTH, 20):
+    #     bresenham((WIDTH / 2, HEIGHT), (0, i), RED)
+    #     bresenham((WIDTH / 2, HEIGHT), (WIDTH, i), BLUE)
+    #     bresenham((WIDTH / 2, HEIGHT), (i, 0), GREEN)
+
+    print(floor(BLACK * 0.9))
+    circle((WIDTH / 2, HEIGHT / 2), 200, WHITE * 0.1)
 
     pygame.display.flip()
 
-    floodFill((int(WIDTH / 2), int(HEIGHT / 2) + 150), CYAN)
+    floodFill((int(WIDTH / 2), int(HEIGHT / 2)), CYAN)
     floodFill((int(WIDTH / 2), int(HEIGHT)), MAGENTA)
 
     # Update the screen
