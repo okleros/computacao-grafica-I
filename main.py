@@ -246,6 +246,52 @@ def circle(c: tuple, r: number, color: Color) -> None:
     if x == y:
         plot(c, (x, y), color)
 
+# bresenham_ellipse not working
+def bresenham_ellipse(center: tuple, a: int, b: int, color: Color) -> None:
+    # Compute the initial values for x and y along the major axis
+    x = a
+    y = 0
+    
+    # Compute the error term for each step along the major axis
+    d1 = b**2 - a**2*b + 0.25*a**2
+    
+    # Step along the major axis and plot the corresponding points
+    while b**2*x > a**2*y:
+        setpixel((x + center[0], y + center[1]), color)
+        setpixel((-x + center[0], y + center[1]), color)
+        setpixel((x + center[0], -y + center[1]), color)
+        setpixel((-x + center[0], -y + center[1]), color)
+        
+        if d1 < 0:
+            d1 += b**2*(2*x+3)
+        else:
+            d1 += b**2*(2*x+3) + a**2*(-2*y+2)
+            y += 1
+        
+        x -= 1
+    
+    # Compute the initial values for x and y along the minor axis
+    x = 0
+    y = b
+    
+    # Compute the error term for each step along the minor axis
+    d2 = a**2 - b**2*a + 0.25*b**2
+    
+    # Step along the minor axis and plot the corresponding points
+    while a**2*y > b**2*x:
+        setpixel((x + center[0], y + center[1]), color)
+        setpixel((-x + center[0], y + center[1]), color)
+        setpixel((x + center[0], -y + center[1]), color)
+        setpixel((-x + center[0], -y + center[1]), color)
+        
+        if d2 < 0:
+            d2 += a**2*(2*y+3)
+        else:
+            d2 += a**2*(2*y+3) + b**2*(-2*x+2)
+            x += 1
+        
+        y -= 1
+
 class Polygon:
     __vertices = None
 
@@ -340,32 +386,7 @@ def floodFill(p: tuple, color: Color) -> None:
 
 
 def main():
-    # pol = Polygon()
-
-    # pol.addVertex((100, 200))
-    # pol.addVertex((WIDTH / 2, 50))
-    # pol.addVertex((WIDTH - 100, 200))
-    # pol.addVertex((WIDTH - 180, HEIGHT - 180))
-    # pol.addVertex((180, HEIGHT - 180))
-
-    # pol.draw(YELLOW)
-    # senoid(RED)
-
-    # setpixel((-5, -5), GREEN)
-    # setpixel((800, 800), MAGENTA)
-
-    # for i in range(0, WIDTH, 20):
-    #     bresenham((WIDTH / 2, HEIGHT), (0, i), RED)
-    #     bresenham((WIDTH / 2, HEIGHT), (WIDTH, i), BLUE)
-    #     bresenham((WIDTH / 2, HEIGHT), (i, 0), GREEN)
-
-    print(floor(BLACK * 0.9))
-    circle((WIDTH / 2, HEIGHT / 2), 200, WHITE * 0.1)
-
-    pygame.display.flip()
-
-    floodFill((int(WIDTH / 2), int(HEIGHT / 2)), CYAN)
-    floodFill((int(WIDTH / 2), int(HEIGHT)), MAGENTA)
+    
 
     # Update the screen
     pygame.display.flip()
