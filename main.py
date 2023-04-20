@@ -42,6 +42,7 @@ class Color:
 
 WIDTH = HEIGHT = 700
 
+
 # Initialize Pygame and create the screen
 pygame.init()
 
