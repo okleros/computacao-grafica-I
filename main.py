@@ -310,9 +310,14 @@ class Polygon:
     def insertVertex(self, vertex: tuple, index: int) -> None:
         self.__vertices.insert(index, vertex)
 
-    def getVertices(self) -> None:
-        for i in range(len(self.__vertices)):
-            print(f"[{self.__vertices[0]}, {self.__vertices[1]}]\n")
+    def getVertices(self) -> list:
+        return self.__vertices
+
+    def rows(self) -> int:
+        return len(self.__vertices)
+
+    def columns(self) -> int:
+        return len(self.__vertices[0])
 
     def draw(self, color: Color) -> None:
         x = self.__vertices[0][0]
@@ -329,22 +334,73 @@ class Polygon:
 
         bresenham((x, y), (self.__vertices[0][0], self.__vertices[0][1]), color)
 
+def intersec(scan: int, seg: tuple) -> int:
+    xi = seg[0][0]
+    yi = seg[0][1]
+    xf = seg[1][0]
+    yf = seg[1][1]
+    y = scan
+
+    # Se o segmento é horizontal, não há intersecção
+    if yi == yf:
+        return -1
+
+    # Troca os pontos para garantir que o ponto inicial está acima do final
+    if yi > yf:
+        xi, xf, yi, yf = xf, xi, yf, yi
+
+    t = (y - yi) / (yf - yi)
+
+    if t > 0 and t <= 1:
+        x = xi + t * (xf - xi)
+
+        return x
+
+    else:
+        return -1
+
+
+def scanline(pol: Polygon, color: Color) -> None:
+    #k = 0.001
+    ver = pol.getVertices()
+    poly = [ver[i][1] for i in range(len(ver))]
+
+    ymin = min(poly)
+    ymax = max(poly)
+
+    for y in range(ymin, ymax):
+        itx = []
+
+        pi = ver[0]
+
+        for p in range(1, pol.rows()):
+            pf = ver[p]
+
+            xi = intersec(y, (pi, pf))
+            #print(xi)
+
+            if xi >= 0:
+                itx.append(xi)
+
+            pi = pf
+
+        pf = ver[0]
+
+        xi = intersec(y, (pi, pf))
+
+        if xi >= 0:
+            itx.append(xi)
+
+
+        for i in range(0, len(itx), 2):
+            for pixel in range(int(itx[i]) + 1, int(itx[i + 1]) + 1):
+                #print((pixel, y))
+                setpixel((pixel, y), color)
+
 def floodFill(p: tuple, color: Color) -> None:
     p = normalize(p)
     
     def isValid(p: tuple, icolor: Color) -> bool:
-        if (p[0] < 0):
-            return False
-
-        if (p[1] < 0):
-            return False
-
-        if (p[0] > WIDTH - 1):
-            return False
-
-        if (p[1] > HEIGHT - 1):
-            return False
-
         if (getpixel(p) != icolor):
             return False
 
@@ -384,9 +440,58 @@ def floodFill(p: tuple, color: Color) -> None:
             if isValid(west, icolor):
                 stack.append(west)
 
+def floodFill(p: tuple, bcolor: Color, color: Color) -> None:
+    p = normalize(p)
+    
+    def isValid(p: tuple, bcolor: Color) -> bool:
+        if (getpixel(p) == bcolor):
+            return False
+
+        return True
+
+    stack = deque()
+
+    stack.append(p)
+
+    while stack:
+        pixel = stack.pop()
+        #print(pixel)
+
+        x = pixel[0]
+        y = pixel[1]
+
+        if isValid(pixel, bcolor):
+            setpixel(pixel, color)
+
+            north = (x, y - 1)
+            south = (x, y + 1)
+            east = (x + 1, y)
+            west = (x - 1, y)
+
+            if isValid(north, bcolor):
+                stack.append(north)
+
+            if isValid(south, bcolor):
+                stack.append(south)
+
+            if isValid(east, bcolor):
+                stack.append(east)
+
+            if isValid(west, bcolor):
+                stack.append(west)
 
 def main():
-    
+    p = Polygon()
+
+    p.addVertex((WIDTH / 2, 30))
+    p.addVertex((30, HEIGHT - 30))
+    p.addVertex((WIDTH - 30, HEIGHT - 30))
+
+    #p.draw(WHITE)
+
+    pygame.display.flip()
+
+    scanline(p, MAGENTA)
 
     # Update the screen
     pygame.display.flip()
