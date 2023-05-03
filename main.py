@@ -482,17 +482,9 @@ def floodFill(p: tuple, bcolor: Color, color: Color) -> None:
                 stack.append(west)
 
 def main():
-    p = Polygon()
-
-    p.addVertex((WIDTH / 2, 30))
-    p.addVertex((30, HEIGHT - 30))
-    p.addVertex((WIDTH - 30, HEIGHT - 30))
-
-    #p.draw(WHITE)
+    DDAAA((WIDTH / 2 - 30, 0), (WIDTH / 2, HEIGHT / 2), WHITE)
 
     pygame.display.flip()
-
-    scanline(p, MAGENTA)
 
     # Update the screen
     pygame.display.flip()
