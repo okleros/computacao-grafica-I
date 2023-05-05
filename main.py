@@ -40,9 +40,12 @@ class Color:
 
         return False
 
-WIDTH = 640
-HEIGHT = 480
+WIDTH = 512
+HEIGHT = 512
 
+LCI = 0XFA
+COL = 0XFB
+TEX = 0XFC
 
 # Initialize Pygame and create the screen
 pygame.init()
@@ -70,13 +73,13 @@ def setpixel(p: tuple, color: Color) -> None:
     pygame_color = pygame.Color(int(color.r), int(color.g), int(color.b), int(color.a))
     screen.set_at(p, pygame_color)
 
-def getpixel(p: tuple) -> Color:
+def getpixel(p: tuple, surf: pygame.surface = screen) -> Color:
     p = normalize(p)
 
     if p == -1:
         return -1
 
-    pygame_color = screen.get_at(p)
+    pygame_color = surf.get_at(p)
     return Color(pygame_color.r, pygame_color.g, pygame_color.b, pygame_color.a)
 
 # Default useful color macros
@@ -305,10 +308,10 @@ def bresenham_ellipse(center: tuple, a: int, b: int, color: Color) -> None:
         y -= 1
 
 class Polygon:
-    __vertices = None
-
     def __init__(self, ver: list = []) -> None:
         self.__vertices = ver
+        self.__color = None
+        self.__tex = None
 
     def __repr__(self) -> list:
         return self.__vertices
@@ -331,6 +334,14 @@ class Polygon:
     def columns(self) -> int:
         return len(self.__vertices[0])
 
+    def moveX(self, amt: int = 0):
+        for i in range(len(self.__vertices)):
+            self.__vertices[i][0] += amt
+    
+    def moveY(self, amt: int = 0):
+        for i in range(len(self.__vertices)):
+            self.__vertices[i][1] += amt
+
     def draw(self, color: Color) -> None:
         x = self.__vertices[0][0]
         y = self.__vertices[0][1]
@@ -346,14 +357,32 @@ class Polygon:
 
         bresenham((x, y), (self.__vertices[0][0], self.__vertices[0][1]), color)
 
-    def scanline(self, color: Color) -> None:
+    def scanline(self, arg: int) -> None:
+        if arg == LCI:
+            pass
+        
+        elif arg == COL:
+            self.__scanlineColor()
+        
+        elif arg == TEX:
+            pass
+        
+        else:
+            raise ValueError("The arguments for scanline should be LCI for color interpolation, COL for color or TEX for texture.")
+
+
+        
+    def __scanlineColor(self) -> None:
+        if self.__color is None:
+            raise Exception("There is no color currently assigned to this Polygon, use Polygon.setColor(color) to assign a color and then try again")
+        
         ver = self.__vertices
         poly = [ver[i][1] for i in range(len(ver))]
 
         ymin = min(poly)
         ymax = max(poly)
 
-        for y in range(ymin, ymax):
+        for y in range(int(ymin), int(ymax)):
             itx = []
             pi = ver[0]
 
@@ -373,12 +402,21 @@ class Polygon:
                 itx.append(xi)
 
             for i in range(0, len(itx), 2):
-                if itx[i] > itx[i + 1]:
-                    itx[i], itx[i + 1] = itx[i + 1], itx[i]
+                try:
+                    if itx[i] > itx[i + 1]:
+                        itx[i], itx[i + 1] = itx[i + 1], itx[i]
 
-                for pixel in range(int(itx[i]) + 1, int(itx[i + 1]) + 1):
-                    setpixel((pixel, y), color)
+                except:
+                    continue
 
+                for pixel in range(int(itx[i]) + 1, int(itx[i + 1])):
+                    setpixel((pixel, y), self.__color)
+
+    def setTexture(self, tex: pygame.surface):
+        self.__tex = tex
+
+    def setColor(self, color: Color):
+        self.__color = color
 
 def intersec(scan: int, seg: tuple) -> int:
     xi = seg[0][0]
@@ -498,12 +536,40 @@ def boundaryFill(p: tuple, bcolor: Color, color: Color) -> None:
 def update():
     pygame.display.flip()
 
+def clear():
+    screen.fill((0, 0, 0))
+
 def main():
-    p = Polygon([(30, 30), (WIDTH - 30, 30), (WIDTH - 30, HEIGHT - 30), (30, HEIGHT - 30)])
+    p1 = Polygon([[225, 225, GREEN], [WIDTH - 225, 225, RED], [WIDTH - 225, HEIGHT - 225, WHITE], [225, HEIGHT - 225, 225, BLACK]])
+    p2 = Polygon([[225, 225, GREEN], [WIDTH - 225, 225, RED], [WIDTH - 225, HEIGHT - 225, WHITE], [225, HEIGHT - 225, 225, BLACK]])
+    p3 = Polygon([[225, 225, GREEN], [WIDTH - 225, 225, RED], [WIDTH - 225, HEIGHT - 225, WHITE], [225, HEIGHT - 225, 225, BLACK]])
+    p4 = Polygon([[225, 225, GREEN], [WIDTH - 225, 225, RED], [WIDTH - 225, HEIGHT - 225, WHITE], [225, HEIGHT - 225, 225, BLACK]])
+
+    dice = pygame.image.load("C:\\Users\\gutem\\OneDrive\\Imagens\\Saved Pictures\\6545910.png").convert()
+
+    p1.setColor(RED)
+    p2.setColor(GREEN)
+    p3.setColor(BLUE)
+    p4.setColor(MAGENTA)
+
+    for i in range(200):
+        clear()
+        p1.scanline(COL)
+        p2.scanline(COL)
+        p3.scanline(COL)
+        p4.scanline(COL)
+        p1.moveX(2)
+        p2.moveX(-2)
+        p3.moveX(2)
+        p4.moveX(-2)
+        p1.moveY(2)
+        p2.moveY(2)
+        p3.moveY(-2)
+        p4.moveY(-2)
+        update()
     
-    p.scanline(RED)    
-    update()
     # Update the screen
+    update()
 
     # Run the game loop
     running = True
