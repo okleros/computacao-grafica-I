@@ -554,18 +554,21 @@ def main():
 
     for i in range(200):
         clear()
+        
         p1.scanline(COL)
         p2.scanline(COL)
         p3.scanline(COL)
         p4.scanline(COL)
+        
         p1.moveX(2)
-        p2.moveX(-2)
-        p3.moveX(2)
-        p4.moveX(-2)
         p1.moveY(2)
+        p2.moveX(-2)
         p2.moveY(2)
+        p3.moveX(2)
         p3.moveY(-2)
+        p4.moveX(-2)
         p4.moveY(-2)
+        
         update()
     
     # Update the screen
