@@ -600,7 +600,7 @@ def clear():
     screen.fill((0, 0, 0))
 
 def main():
-    p = Polygon([[10, 10, CYAN], [500, 10, MAGENTA], [500, 500, YELLOW], [10, 500, WHITE]])
+    p = Polygon([[0, 0, CYAN], [WIDTH, 0, MAGENTA], [WIDTH, HEIGHT, YELLOW], [0, HEIGHT, WHITE]])
 
     p.setColor(MAGENTA)
     p.scanline(LCI)
