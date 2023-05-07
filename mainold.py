@@ -40,7 +40,7 @@ class Color:
 
         return False
 
-WIDTH = 512
+WIDTH = 1200
 HEIGHT = 512
 
 CENTER = (WIDTH / 2, HEIGHT / 2)
@@ -361,7 +361,7 @@ class Polygon:
 
     def scanline(self, arg: int) -> None:
         if arg == LCI:
-            self.__scanlineLerp()
+            pass
         
         elif arg == COL:
             self.__scanlineColor()
@@ -390,7 +390,7 @@ class Polygon:
 
             for p in range(1, self.rows()):
                 pf = ver[p]
-                xi = intersec(y, (pi, pf))[0]
+                xi = intersec(y, (pi, pf))
 
                 if xi >= 0:
                     itx.append(xi)
@@ -398,7 +398,7 @@ class Polygon:
                 pi = pf
 
             pf = ver[0]
-            xi = intersec(y, (pi, pf))[0]
+            xi = intersec(y, (pi, pf))
 
             if xi >= 0:
                 itx.append(xi)
@@ -414,50 +414,6 @@ class Polygon:
                 for pixel in range(int(itx[i]) + 1, int(itx[i + 1])):
                     setpixel((pixel, y), self.__color)
 
-    def __scanlineLerp(self):
-        passo = 1
-
-        ver = self.__vertices
-        poly = [ver[i][1] for i in range(len(ver))]
-
-        ymin = min(poly)
-        ymax = max(poly)
-
-        for y in range(int(ymin), int(ymax)):
-            itx = []
-            pi = ver[0]
-
-            for p in range(1, self.rows()):
-                pf = ver[p]
-                xi = intersec(y, (pi, pf))
-
-                if xi[0] >= 0:
-                    itx.append(xi)
-
-                pi = pf
-
-            pf = ver[0]
-            xi = intersec(y, (pi, pf))
-
-            if xi[0] >= 0:
-                itx.append(xi)
-
-            for i in range(0, len(itx), 2):
-                try:
-                    if itx[i][0] > itx[i + 1][0]:
-                        passo = -1
-                except:
-                    continue
-                k = 0
-                for pixel in range(int(itx[i][0]) + 1, int(itx[i + 1][0]), passo):
-                    passos = abs(itx[i][0] - itx[i + 1][0])
-                    t = k / passos
-
-                    colori = itx[i][1]
-                    colorf = itx[i + 1][1]
-
-                    setpixel((pixel, y), lerpColor(colori, colorf, t))
-                    k += 1        
     def setTexture(self, tex: pygame.surface):
         self.__tex = tex
 
@@ -465,39 +421,29 @@ class Polygon:
         self.__color = color
 
 def intersec(scan: int, seg: tuple) -> int:
-    trocou = False
-
     xi = seg[0][0]
     yi = seg[0][1]
-    colori = seg[0][2]
-    
     xf = seg[1][0]
     yf = seg[1][1]
-    colorf = seg[1][2]
-    
     y = scan
 
     # Se o segmento é horizontal, não há intersecção
     if yi == yf:
-        return [-1, -1]
+        return -1
 
     # Troca os pontos para garantir que o ponto inicial está acima do final
     if yi > yf:
         xi, xf, yi, yf = xf, xi, yf, yi
-        trocou = True
 
     t = (y - yi) / (yf - yi)
 
     if t > 0 and t <= 1:
         x = xi + t * (xf - xi)
 
-        if trocou:
-            return [x, lerpColor(colorf, colori, t)]
-        else:
-            return [x, lerpColor(colori, colorf, t)]
+        return x
 
     else:
-        return [-1, -1]
+        return -1
 
 lerp = lambda a, b, t: round((1 - t) * a + t * b)
 
@@ -600,11 +546,49 @@ def clear():
     screen.fill((0, 0, 0))
 
 def main():
-    p = Polygon([[10, 10, CYAN], [500, 10, MAGENTA], [500, 500, YELLOW], [10, 500, WHITE]])
+    '''p1 = Polygon([[225, 225, GREEN], [WIDTH - 225, 225, RED], [WIDTH - 225, HEIGHT - 225, WHITE], [225, HEIGHT - 225, 225, BLACK]])
+                p2 = Polygon([[225, 225, GREEN], [WIDTH - 225, 225, RED], [WIDTH - 225, HEIGHT - 225, WHITE], [225, HEIGHT - 225, 225, BLACK]])
+                p3 = Polygon([[225, 225, GREEN], [WIDTH - 225, 225, RED], [WIDTH - 225, HEIGHT - 225, WHITE], [225, HEIGHT - 225, 225, BLACK]])
+                p4 = Polygon([[225, 225, GREEN], [WIDTH - 225, 225, RED], [WIDTH - 225, HEIGHT - 225, WHITE], [225, HEIGHT - 225, 225, BLACK]])
+            
+                dice = pygame.image.load("C:\\Users\\gutem\\OneDrive\\Imagens\\Saved Pictures\\6545910.png").convert()
+            
+                p1.setColor(RED)
+                p2.setColor(GREEN)
+                p3.setColor(BLUE)
+                p4.setColor(MAGENTA)
+            
+                for i in range(200):
+                    clear()
+                    
+                    p1.scanline(COL)
+                    p2.scanline(COL)
+                    p3.scanline(COL)
+                    p4.scanline(COL)
+                    
+                    p1.moveX(2)
+                    p1.moveY(2)
+                    p2.moveX(-2)
+                    p2.moveY(2)
+                    p3.moveX(2)
+                    p3.moveY(-2)
+                    p4.moveX(-2)
+                    p4.moveY(-2)
+                    
+                    update()'''
+    
+    numsteps = abs(int((80) - (WIDTH - 80)))
+    for i in range(numsteps):
+        t = i / (numsteps - 1)
 
-    p.setColor(MAGENTA)
-    p.scanline(LCI)
+        circle((80 + i, HEIGHT / 2), 80, lerpColor(YELLOW, lerpColor(GREEN, CYAN, t), t))
+        update()
 
+    boundaryFill((80 + i, HEIGHT / 2), lerpColor(YELLOW, lerpColor(GREEN, CYAN, t), t), lerpColor(YELLOW, lerpColor(GREEN, CYAN, t), t))
+
+    print(lerpColor(RED, GREEN, 0.5))
+
+    # Update the screen
     update()
 
     # Run the game loop
