@@ -40,7 +40,7 @@ class Color:
 
         return False
 
-WIDTH = 1200
+WIDTH = 512
 HEIGHT = 512
 
 CENTER = (WIDTH / 2, HEIGHT / 2)
@@ -577,17 +577,21 @@ def main():
                     
                     update()'''
     
-    numsteps = abs(int((80) - (WIDTH - 80)))
+    '''floodFill((WIDTH / 2 - 170, HEIGHT / 2), YELLOW)
+                circle((WIDTH / 2 + 170, HEIGHT / 2), 80, CYAN)
+                floodFill((WIDTH / 2 + 170, HEIGHT / 2), CYAN)
+                circle(CENTER, 80, lerpColor(YELLOW, CYAN, 0.5))
+                floodFill(CENTER, lerpColor(YELLOW, CYAN, 0.5))'''
+
+    numsteps = abs(int((WIDTH / 2 - 170) - (WIDTH / 2 + 170)))
     for i in range(numsteps):
         t = i / (numsteps - 1)
 
-        circle((80 + i, HEIGHT / 2), 80, lerpColor(YELLOW, lerpColor(GREEN, CYAN, t), t))
+        circle((WIDTH / 2 - 170 + i, HEIGHT / 2), 80, lerpColor(YELLOW, RED, t))
         update()
 
-    boundaryFill((80 + i, HEIGHT / 2), lerpColor(YELLOW, lerpColor(GREEN, CYAN, t), t), lerpColor(YELLOW, lerpColor(GREEN, CYAN, t), t))
-
-    print(lerpColor(RED, GREEN, 0.5))
-
+    boundaryFill((WIDTH / 2 - 170 + i, HEIGHT / 2), lerpColor(YELLOW, RED, t), lerpColor(YELLOW, RED, t))
+    
     # Update the screen
     update()
 
