@@ -61,7 +61,7 @@ def normalize(p: tuple) -> tuple:
     x = p[0]
     y = p[1]
 
-    if x not in range(0, WIDTH) or y not in range(0, HEIGHT):
+    if not (0 <= x < WIDTH) or not (0 <= y < HEIGHT):
         return -1
 
     return (int(x), int(y))
@@ -84,6 +84,17 @@ def getpixel(p: tuple, surf: pygame.surface = screen) -> Color:
     pygame_color = surf.get_at(p)
     return Color(pygame_color.r, pygame_color.g, pygame_color.b, pygame_color.a)
 
+def getpixelTex(p: tuple, surf: pygame.surface) -> Color:
+    x = p[0] % 1
+    y = p[1] % 1
+
+    x = round(x * (surf.get_width() - 1))
+    y = round(y * (surf.get_height() - 1))
+
+    pygame_color = surf.get_at((x, y))
+    
+    return Color(pygame_color.r, pygame_color.g, pygame_color.b, pygame_color.a)
+
 # Default useful color macros
 WHITE = Color(255, 255, 255)
 BLACK = Color(0, 0, 0)
@@ -94,6 +105,7 @@ CYAN = Color(0, 255, 255)
 MAGENTA = Color(255, 0, 255)
 YELLOW = Color(255, 255, 0)
 BROWN = Color(150, 75, 0)
+GREY = Color(0x51, 0x51, 0x51)
 
 def DDA(pi: tuple, pf: tuple, color: Color) -> None:
     xi = pi[0]
@@ -264,50 +276,57 @@ def circle(c: tuple, r: number, color: Color) -> None:
         plot(c, (x, y), color)
 
 # bresenham_ellipse not working
-def bresenham_ellipse(center: tuple, a: int, b: int, color: Color) -> None:
+def ellipse(center: tuple, a: int, b: int, color: Color) -> None:
     # Compute the initial values for x and y along the major axis
+    x = 0
+    y = b
+
+    xc = center[0]
+    yc = center[1]
+    
+    a2 = a ** 2
+    b2 = b ** 2
+
+    da = 2 * a2
+    db = 2 * b2
+
+    # Compute the error term for each step along the major axis
+    p = b2 - a2 * b + 0.25 * a2
+    
+    # Step along the major axis and plot the corresponding points
+    while b2 * x <= a2 * y:
+        setpixel((x + xc, y + yc), color)
+        setpixel((-x + xc, y + yc), color)
+        setpixel((x + xc, -y + yc), color)
+        setpixel((-x + xc, -y + yc), color)
+        
+        x += 1
+        p += db * x + b2
+
+        if p >= 0:
+            y -= 1
+            p -= da * y
+    
+    # Compute the initial values for x and y along the minor axis
     x = a
     y = 0
     
-    # Compute the error term for each step along the major axis
-    d1 = b**2 - a**2*b + 0.25*a**2
-    
-    # Step along the major axis and plot the corresponding points
-    while b**2*x > a**2*y:
-        setpixel((x + center[0], y + center[1]), color)
-        setpixel((-x + center[0], y + center[1]), color)
-        setpixel((x + center[0], -y + center[1]), color)
-        setpixel((-x + center[0], -y + center[1]), color)
-        
-        if d1 < 0:
-            d1 += b**2*(2*x+3)
-        else:
-            d1 += b**2*(2*x+3) + a**2*(-2*y+2)
-            y += 1
-        
-        x -= 1
-    
-    # Compute the initial values for x and y along the minor axis
-    x = 0
-    y = b
-    
     # Compute the error term for each step along the minor axis
-    d2 = a**2 - b**2*a + 0.25*b**2
+    p = a2 - b2 * a + 0.25 * b2
     
     # Step along the minor axis and plot the corresponding points
-    while a**2*y > b**2*x:
+    while a2 * y <= b2 * x:
         setpixel((x + center[0], y + center[1]), color)
         setpixel((-x + center[0], y + center[1]), color)
         setpixel((x + center[0], -y + center[1]), color)
         setpixel((-x + center[0], -y + center[1]), color)
         
-        if d2 < 0:
-            d2 += a**2*(2*y+3)
-        else:
-            d2 += a**2*(2*y+3) + b**2*(-2*x+2)
-            x += 1
-        
-        y -= 1
+        y += 1
+        p += da * y + a2
+
+        if p >= 0:
+            x -= 1
+            p -= db * x
 
 class Polygon:
     def __init__(self, ver: list = []) -> None:
@@ -316,7 +335,7 @@ class Polygon:
         self.__tex = None
 
     def __repr__(self) -> list:
-        return self.__vertices
+        return str(self.__vertices)
 
     def addVertex(self, vertex: tuple) -> None:
         self.__vertices.append(vertex)
@@ -336,11 +355,11 @@ class Polygon:
     def columns(self) -> int:
         return len(self.__vertices[0])
 
-    def moveX(self, amt: int = 0):
+    def moveX(self, amt: int = 0) -> None:
         for i in range(len(self.__vertices)):
             self.__vertices[i][0] += amt
     
-    def moveY(self, amt: int = 0):
+    def moveY(self, amt: int = 0) -> None:
         for i in range(len(self.__vertices)):
             self.__vertices[i][1] += amt
 
@@ -367,12 +386,10 @@ class Polygon:
             self.__scanlineColor()
         
         elif arg == TEX:
-            pass
+            self.__scanlineTex()
         
         else:
             raise ValueError("The arguments for scanline should be LCI for color interpolation, COL for color or TEX for texture.")
-
-
         
     def __scanlineColor(self) -> None:
         if self.__color is None:
@@ -414,7 +431,7 @@ class Polygon:
                 for pixel in range(int(itx[i]) + 1, int(itx[i + 1])):
                     setpixel((pixel, y), self.__color)
 
-    def __scanlineLerp(self):
+    def __scanlineLerp(self) -> None:
         passo = 1
 
         ver = self.__vertices
@@ -424,8 +441,8 @@ class Polygon:
         ymax = max(poly)
 
         for y in range(int(ymin), int(ymax)):
-            itx = []
             pi = ver[0]
+            itx = []
 
             for p in range(1, self.rows()):
                 pf = ver[p]
@@ -448,20 +465,71 @@ class Polygon:
                         passo = -1
                 except:
                     continue
+
                 k = 0
+
+                colori = itx[i][1]
+                colorf = itx[i + 1][1]
+                
+                passos = abs(itx[i][0] - itx[i + 1][0])
+
                 for pixel in range(int(itx[i][0]) + 1, int(itx[i + 1][0]), passo):
-                    passos = abs(itx[i][0] - itx[i + 1][0])
                     t = k / passos
 
-                    colori = itx[i][1]
-                    colorf = itx[i + 1][1]
-
                     setpixel((pixel, y), lerpColor(colori, colorf, t))
-                    k += 1        
-    def setTexture(self, tex: pygame.surface):
+                    k += 1
+
+    def __scanlineTex(self) -> None:
+        ver = self.__vertices
+        poly = [ver[i][1] for i in range(len(ver))]
+
+        ymin = min(poly)
+        ymax = max(poly)
+
+        for y in range(int(ymin), int(ymax)):
+            itx = []
+            pi = ver[0]
+            passo = 1
+
+            for p in range(1, self.rows()):
+                pf = ver[p]
+                xi = intersec(y, (pi, pf))
+
+                if xi[0] >= 0:
+                    itx.append(xi)
+
+                pi = pf
+
+            pf = ver[0]
+            xi = intersec(y, (pi, pf))
+
+            if xi[0] >= 0:
+                itx.append(xi)
+
+            for i in range(0, len(itx), 2):
+                try:
+                    if itx[i][0] > itx[i + 1][0]:
+                        passo = -1
+
+                except:
+                    continue
+
+                k = 0
+                passos = abs(itx[i][0] - itx[i + 1][0])
+
+                for pixel in range(int(itx[i][0]), int(itx[i + 1][0]), passo):
+                    t = k / passos
+
+                    tx = lerp(itx[i][2][0], itx[i + 1][2][0], t)
+                    ty = lerp(itx[i][2][1], itx[i + 1][2][1], t)
+
+                    setpixel((pixel, y), getpixelTex((tx, ty), self.__tex))
+                    k += 1
+
+    def setTexture(self, tex: pygame.surface) -> None:
         self.__tex = tex
 
-    def setColor(self, color: Color):
+    def setColor(self, color: Color) -> None:
         self.__color = color
 
 def intersec(scan: int, seg: tuple) -> int:
@@ -469,10 +537,17 @@ def intersec(scan: int, seg: tuple) -> int:
 
     xi = seg[0][0]
     yi = seg[0][1]
-    colori = seg[0][2]
     
+    txi = seg[0][3][0]
+    tyi = seg[0][3][1]
+
     xf = seg[1][0]
     yf = seg[1][1]
+    
+    txf = seg[1][3][0]
+    tyf = seg[1][3][1]
+
+    colori = seg[0][2]
     colorf = seg[1][2]
     
     y = scan
@@ -488,20 +563,27 @@ def intersec(scan: int, seg: tuple) -> int:
 
     t = (y - yi) / (yf - yi)
 
-    if t > 0 and t <= 1:
+    if t >= 0 and t <= 1:
         x = xi + t * (xf - xi)
 
+
         if trocou:
-            return [x, lerpColor(colorf, colori, t)]
+            tx = lerp(txf, txi, t)
+            ty = lerp(tyf, tyi, t)
+            
+            return [x, lerpColor(colorf, colori, t), [tx, ty]]
         else:
-            return [x, lerpColor(colori, colorf, t)]
+            tx = lerp(txi, txf, t)
+            ty = lerp(tyi, tyf, t)
+
+            return [x, lerpColor(colori, colorf, t), [tx, ty]]
 
     else:
-        return [-1, -1]
+        return [-1, 0, 0]
 
-lerp = lambda a, b, t: round((1 - t) * a + t * b)
+lerp = lambda a, b, t: (1 - t) * a + t * b
 
-lerpColor = lambda c1, c2, t: Color(lerp(c1.r, c2.r, t), lerp(c1.g, c2.g, t), lerp(c1.b, c2.b, t))
+lerpColor = lambda c1, c2, t: round(Color(lerp(c1.r, c2.r, t), lerp(c1.g, c2.g, t), lerp(c1.b, c2.b, t)))
 
 def floodFill(p: tuple, color: Color) -> None:
     def isValid(p: tuple, icolor: Color) -> bool:
@@ -600,10 +682,16 @@ def clear():
     screen.fill((0, 0, 0))
 
 def main():
-    p = Polygon([[0, 0, CYAN], [WIDTH, 0, MAGENTA], [WIDTH, HEIGHT, YELLOW], [0, HEIGHT, WHITE]])
+    p1 = Polygon([[0, 0, CYAN, [0, 0]], [WIDTH, 0, MAGENTA, [4, 0]], [WIDTH, HEIGHT, YELLOW, [4, 4]], [0, HEIGHT, BROWN, [0, 4]]])
+    p2 = Polygon([[WIDTH / 2, 0, RED, [0.5, 0]], [WIDTH, HEIGHT, GREEN, [1, 1]], [0, HEIGHT, BLUE, [0, 1]]])
 
-    p.setColor(MAGENTA)
-    p.scanline(LCI)
+    sam = pygame.image.load("res/Sam_3.png").convert()
+
+    p1.setColor(GREY)
+    p1.setTexture(sam)
+
+    p1.scanline(TEX)
+    #ellipse(CENTER, 50, 100, WHITE)
 
     update()
 
