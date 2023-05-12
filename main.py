@@ -41,8 +41,8 @@ class Color:
 
         return False
 
-WIDTH = 512
-HEIGHT = 512
+WIDTH = 700
+HEIGHT = 700
 
 CENTER = (WIDTH / 2, HEIGHT / 2)
 
@@ -277,7 +277,6 @@ def circle(c: tuple, r: number, color: Color) -> None:
     if x == y:
         plot(c, (x, y), color)
 
-# bresenham_ellipse not working
 def ellipse(center: tuple, a: int, b: int, color: Color) -> None:
     # Compute the initial values for x and y along the major axis
     x = 0
@@ -369,6 +368,9 @@ class Polygon:
     def getVertices(self) -> list:
         return self.__vertices
 
+    def getCenter(self) -> tuple:
+        return self.__center
+
     def rows(self) -> int:
         return len(self.__vertices)
 
@@ -389,7 +391,9 @@ class Polygon:
 
         points = self.__vertices
 
-        R = np.array([[1, 0, tx], [0, 1, ty], [0, 0, 1]])
+        R = np.array([[1, 0, tx],
+                      [0, 1, ty],
+                      [0, 0,  1]])
 
         for i in range(len(points)):
             P = np.array([points[i][0:2] + [1]]).transpose()
@@ -399,8 +403,9 @@ class Polygon:
             self.__vertices[i][0] = M[0][0]
             self.__vertices[i][1] = M[0][1]
 
-    def scale(self, scale: int) -> None:
-        p = self.__center         
+    def scale(self, scale: int, p: tuple = None) -> None:
+        if p is None:
+            p = self.center()
 
         self.translate([-p[0], -p[1]])
 
@@ -409,7 +414,9 @@ class Polygon:
 
         points = self.__vertices
 
-        R = np.array([[sx, 0, 0], [0, sy, 0], [0, 0, 1]])
+        R = np.array([[sx, 0, 0],
+                      [0, sy, 0],
+                      [0, 0, 1]])
 
         for i in range(len(points)):
             P = np.array([points[i][0:2] + [1]]).transpose()
@@ -421,14 +428,17 @@ class Polygon:
 
         self.translate(p)
 
-    def rotate(self, deg: float) -> None:
-        p = self.__center       
-        
+    def rotate(self, deg: float, p: tuple = None) -> None:
+        if p is None:
+            p = self.center()
+
         self.translate([-p[0], -p[1]])
         
         deg = deg * pi / 180
 
-        R = np.array([[cos(deg), -sin(deg), 0], [sin(deg), cos(deg), 0], [0, 0, 1]])
+        R = np.array([[cos(deg), -sin(deg), 0],
+                      [sin(deg),  cos(deg), 0],
+                      [       0,         0, 1]])
 
         for i in range(len(self.__vertices)):
             
@@ -440,6 +450,31 @@ class Polygon:
             self.__vertices[i][1] = M[0][1]
 
         self.translate(p)
+
+    def transform(self, M: np.array) -> None:
+        for i in range(len(self.__vertices)):
+            
+            P = np.array([self.__vertices[i][0:2] + [1]]).transpose()
+
+            T = (M @ P).transpose()
+
+            self.__vertices[i][0] = T[0][0]
+            self.__vertices[i][1] = T[0][1]
+
+    def mapToWindow(self, w: tuple, v: tuple) -> None:
+        vw = v[0]
+        vh = v[1]
+
+        wxi = w[0][0]
+        wxf = w[1][0]
+        wyi = w[0][1]
+        wyf = w[1][1]
+
+        M = np.array([[vw / (wxf - wxi), 0, (1 - wxi * vw / (wxf - wxi))],
+                   [0, vh / (wyf - wyi), (1 - wyi * vh / (wyf - wyi))],
+                   [0,                0,                            1]])
+
+        self.transform(M)
 
     def draw(self, color: Color) -> None:
         x = self.__vertices[0][0]
@@ -516,8 +551,7 @@ class Polygon:
         ymin = min(poly)
         ymax = max(poly)
 
-        for y in range(int(ymin), int(ymax)):
-            
+        for y in range(int(ymin), int(ymax)):            
             pi = ver[0]
             itx = []
 
@@ -762,23 +796,50 @@ def clear():
     screen.fill((0, 0, 0))
 
 def main():
-    p1 = Polygon([[200, 200, CYAN, [0, 0]], [WIDTH - 200, 200, MAGENTA, [1, 0]], [WIDTH - 200, HEIGHT - 200, YELLOW, [1, 1]], [200, HEIGHT - 200, WHITE, [0, 1]]])
+    j = [[-1, -1], [2, 1]]
+    v = [150, 100]
+    v2 = [75, 50]
+
+    p1 = Polygon([[300, 300, CYAN, [0, 0]], [WIDTH - 300, 300, MAGENTA, [1, 0]], [WIDTH - 300, HEIGHT - 300, YELLOW, [1, 1]], [300, HEIGHT - 300, WHITE, [0, 1]]])
     p2 = Polygon([[WIDTH / 2, 0, RED, [2, 0]], [WIDTH, HEIGHT, GREEN, [4, 4]], [0, HEIGHT, BLUE, [0, 4]]])
+    p3 = Polygon([[-0.5, -0.5, RED, [0, 0]], [0.5, -0.5, GREEN, [1, 0]], [0.5, 0.5, BLUE, [1, 1]], [-0.5, 0.5, YELLOW, [0, 1]]])
+    p4 = Polygon([[-0.5, -0.5, RED, [0, 0]], [0.5, -0.5, GREEN, [1, 0]], [0.5, 0.5, BLUE, [1, 1]], [-0.5, 0.5, YELLOW, [0, 1]]])
 
     sam = pygame.image.load("res/Sam_3.png").convert()
+    dice = pygame.image.load("res/6545910.png").convert()
 
-    p1.setTexture(sam)
-    p1.setColor(MAGENTA)
+    p1.setTexture(dice)
+    p1.setColor(YELLOW)
+    p3.setColor(BROWN)
+    p3.setTexture(sam)
+    p4.setTexture(dice)
 
-    for i in range(100):
+    p3.mapToWindow(j, v)
+    p4.mapToWindow(j, v2)
+
+    i = 0
+    running = True
+    while running:
         clear()
-        p1.scale([1.01, 1.01])
+        #p1.scale([1.1, 1.1])
+        #p3.scale([1.1, 1.1])
         p1.rotate(5)
+        #p3.rotate(5)
+        #p4.rotate(5)
         p1.scanline(COL)
+        #p3.scanline(TEX)
+        #p4.scanline(TEX)
+        #p1.draw(GREEN)
+        #p3.draw(MAGENTA)
         update()
+        #sleep(0.02)
+        #i += 1
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.image.save(screen, "./output2.png")
+                running = False
 
     # Run the game loop
-    running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
