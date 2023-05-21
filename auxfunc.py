@@ -2,6 +2,9 @@ import pygame, numpy as np
 from math import floor, sin, cos, pi, isnan
 from copy import deepcopy
 
+#WIDTH = HEIGHT = 500
+#screen = pygame.display.set_mode((WIDTH, HEIGHT))
+
 # Define the Color class
 class Color:
     def __init__(self, r: int, g: int, b: int, a: int = 255) -> None:
@@ -74,8 +77,8 @@ def getpixelTex(tex, p: tuple) -> Color:
     x = p[0] % 1
     y = p[1] % 1
 
-    x = round(x * (tex.get_width() - 1))
-    y = round(y * (tex.get_height() - 1))
+    x = floor(x * (tex.get_width()))
+    y = floor(y * (tex.get_height()))
 
     pygame_color = tex.get_at((x, y))
 
@@ -92,6 +95,11 @@ MAGENTA = Color(255, 0, 255)
 YELLOW = Color(255, 255, 0)
 BROWN = Color(150, 75, 0)
 GREY = Color(0x51, 0x51, 0x51)
+NEON_GREEN = Color(57, 255, 20)
+NEON_RED = Color(255, 49, 49)
+NEON_YELLOW = Color(255, 240, 31)
+NEON_ORANGE = Color(255, 95, 31)
+ORANGE = Color(255, 165, 0)
 
 def DDA(screen, pi: tuple, pf: tuple, color: Color) -> None:
     xi = pi[0]
@@ -644,6 +652,9 @@ class Polygon:
                     k += 1
 
     def __scanlineTex(self, screen) -> None:
+        if self.__tex is None:
+            raise Exception("There is no texture currently assigned to this Polygon, use Polygon.setTexture(tex) to assign a texture and then try again")
+        
         if self.__clipped is not None:
             ver = self.__clipped
         else:
@@ -702,6 +713,13 @@ class Polygon:
 
     def setColor(self, color: Color) -> None:
         self.__color = color
+
+    def getColor(self) -> Color:
+        return self.__color
+
+class Rectangle(Polygon):
+    def __init__(self, x, y, width, height):
+        super().__init__([[x, y, BLACK, [0, 0]], [x + width, y, BLACK, [1, 0]], [x + width, y + height, BLACK, [1, 1]], [x, y + height, BLACK, [0, 1]]])
 
 def intersec(scan: int, seg: tuple) -> int:
     trocou = False
@@ -857,8 +875,8 @@ def clear(screen, background = None):
 
 def main():
     j = [[0, 0], [WIDTH, HEIGHT]]
-    j2 = [[0, 0], [1, 1]]
     v = [[0, 0], [WIDTH, HEIGHT]]
+    j2 = [[0, 0], [1, 1]]
     v2 = [[WIDTH / 2 + 1, 0], [WIDTH - 1, HEIGHT / 2]]
 
     p1 = Polygon([[300, 300, CYAN, [0, 0]], [WIDTH - 300, 300, MAGENTA, [1, 0]], [WIDTH - 300, HEIGHT - 300, YELLOW, [1, 1]], [300, HEIGHT - 300, WHITE, [0, 1]]])
@@ -866,13 +884,12 @@ def main():
     p3 = Polygon([[0, 0, RED, [0, 0]], [1, 0, GREEN, [1, 0]], [1, 1, BLUE, [1, 1]], [0, 1, YELLOW, [0, 1]]])
     p4 = Polygon([[0, 0, RED, [0, 0]], [1, 0, GREEN, [1, 0]], [1, 1, BLUE, [1, 1]], [0, 1, YELLOW, [0, 1]]])
 
-    sam = pygame.image.load("res/Sam_3.png").convert_alpha()
-    dice = pygame.image.load("res/6545910.png").convert_alpha()
+    #sam = pygame.image.load("res/Sam_3.png").convert_alpha()
+    #dice = pygame.image.load("res/6545910.png").convert_alpha()
 
-    p1.setTexture(dice)
+    #p1.setTexture(dice)
     p1.setColor(YELLOW)
 
-    p1.mapToWindow(j, v)
     p4c = p4.copy()
     p4c.mapToWindow(j2, v2)
 
@@ -881,6 +898,8 @@ def main():
     i = 0
     running = True
     while running:
+        p1.mapToWindow(j, v)
+        clear(screen)
         clock.tick(60)
         
         for event in pygame.event.get():
@@ -888,10 +907,12 @@ def main():
                 pygame.image.save(screen, "./output2.png")
                 running = False
         
-        clear(screen)
         p1.rotate(5)
         p1.draw(screen, CYAN)
-        p4c.draw(screen, YELLOW)
+        v[1][0] += 0.01
+        v[1][1] += 0.01
+        v[0][0] -= 0.01
+        v[0][1] -= 0.01
         update()
 
     # Run the game loop
