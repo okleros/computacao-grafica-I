@@ -10,10 +10,10 @@ screen_width, screen_height = pygame.display.Info().current_w, pygame.display.In
 
 #print(screen_width, screen_height)
 
-WIDTH = 320
-HEIGHT = 320
+WIDTH = 384
+HEIGHT = 384
 
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen = pygame.display.set_mode((WIDTH, HEIGHT + 200))
 pygame.display.set_caption("Space Invaders")
 
 os.environ['SDL_VIDEO_CENTERED'] = '1'
@@ -23,17 +23,25 @@ os.environ['SDL_VIDEO_WINDOW_POS'] = f"{window_pos_x},{window_pos_y}"
 
 FPS = 30
 
+def load_sound(name):
+	return pygame.mixer.Sound(join("music", name))
+
 pygame.mixer.music.set_volume(0.07)
 music = pygame.mixer.music.load(join("music", "BgMusic.ogg"))
+
 pygame.mixer.music.play(-1)
 
-bullet_sound = pygame.mixer.Sound(join("music", "shotfired.ogg"))
-bomb_sound = pygame.mixer.Sound(join("music", "bomb.wav"))
-dead_sound = pygame.mixer.Sound(join("music", "dead_sound.wav"))
-bullet_sound.set_volume(0.1)
-bomb_sound.set_volume(0.1)
+bullet_sound = load_sound("shotfired.ogg")
+bomb_sound = load_sound("bomb.wav")
+dead_sound = load_sound("dead_sound.wav")
+enemy_death_sound = load_sound("enemy_death_sound.wav")
+laser_sound = load_sound("laser.wav")
+
+bullet_sound.set_volume(0.07)
+bomb_sound.set_volume(0.3)
 dead_sound.set_volume(0.3)
-laser_sound = pygame.mixer.Sound(join("music", "laser.wav"))
+enemy_death_sound.set_volume(0.06)
+
 
 def load_textures():
 	path = "res"
@@ -68,14 +76,14 @@ class Bullet(Rectangle):
 
 class Player(Rectangle):
 	def __init__(self):
-		super().__init__(WIDTH / 2, HEIGHT - 30, 16, 16)
+		super().__init__(WIDTH / 2, HEIGHT - 30, 20, 20)
 		self.setTexture(TEXTURES["ship"])
 		self.health = 3
 		self.crosshair = False
 
 class Enemy(Rectangle):
 	def __init__(self, health, player):
-		super().__init__(randint(int(max(player.center()[0] - 200, 30)), int(min(player.center()[0] + 200, WIDTH - 30))), -14, 14, 14)
+		super().__init__(randint(int(max(player.center()[0] - 200, 30)), int(min(player.center()[0] + 200, WIDTH - 30))), -14, 16, 16)
 		self.health = min(health, 4)
 		self.setTexture(TEXTURES[ENEMIES[int(self.health) - 1]])
 		self.scale([1 + 0.01 * self.health, 1 + 0.01 * self.health])
@@ -106,10 +114,11 @@ def collided(polygon1, polygon2):
 def get_background(bg):
 	_, _, width, height = bg.get_rect()
 	tiles = []
+	print(width, height)
 
 	for i in range(WIDTH // width + 1):
-		for j in range(HEIGHT // height + 1):
-			pos = [i * width, (j * height)]
+		for j in range(HEIGHT // height):
+			pos = [i * width, j * height - 1]
 			tiles.append(pos)
 
 	return [tiles, bg]
@@ -121,10 +130,10 @@ def main(screen):
 
 	enemy_spawn_chance = 2
 	bullet_dmg = 1
-	bullets_ps = 3
+	bullets_ps = 2
 	enemy_health = 1
 	enemies_killed = 1
-	player_xvel = 4
+	player_xvel = 3
 	bullets_ao = 1
 	enemy_yvel = 1
 	zoom_in = 0
@@ -136,6 +145,7 @@ def main(screen):
 	powerups = []
 
 	player = Player()
+	print(player)
 	
 	clock = pygame.time.Clock()
 
@@ -175,7 +185,7 @@ def main(screen):
 		dead_sound.play()
 		player = Player()
 
-		player.translate([-8, -(HEIGHT / 2 - 20)])
+		player.translate([-10, -(HEIGHT / 2 - 20)])
 
 		x = 0
 		running = True
@@ -191,10 +201,10 @@ def main(screen):
 				pygame.quit()
 				quit()
 
-			v[1][0] += 0.07
-			v[1][1] += 0.07
-			v[0][0] -= 0.07
-			v[0][1] -= 0.07
+			v[1][0] += 0.08
+			v[1][1] += 0.08
+			v[0][0] -= 0.08
+			v[0][1] -= 0.08
 
 			player.mapToWindow(j, v)
 			player.rotate(8)
@@ -219,6 +229,7 @@ def main(screen):
 		quit()
 
 	while running:
+		#bresenham(screen, [0, HEIGHT], [WIDTH, HEIGHT], NEON_RED)
 		clock.tick(FPS)
 		if froze:
 			clear(screen)
@@ -253,10 +264,11 @@ def main(screen):
 			enemy = enemies[i]
 			
 			if player.crosshair and enemy.getVertices()[0][0] - player_xvel // 3 < player.center()[0] < enemy.getVertices()[1][0] + player_xvel // 3:
+				enemy_death_sound.play()
 				enemies.pop(i)
 				enemies_killed += 1
 
-				if enemies_killed % 20 == 0:
+				if enemies_killed % 15 == 0:
 					enemy_yvel += 0.2
 					enemy_health += 0.5
 					enemy_spawn_chance += 1
@@ -291,10 +303,11 @@ def main(screen):
 				k += 1
 
 			if killed:
+				enemy_death_sound.play()
 				enemies.pop(i)
 				enemies_killed += 1
 
-				if enemies_killed % 20 == 0:
+				if enemies_killed % 15 == 0:
 					enemy_yvel += 0.2
 					enemy_health += 0.5
 					enemy_spawn_chance += 1
@@ -347,7 +360,7 @@ def main(screen):
 
 					enemies_killed += qt_enemy
 
-					if enemies_killed % 20 == 0:
+					if enemies_killed % 15 == 0:
 						if not froze:
 							enemy_yvel += 0.2
 						
@@ -391,91 +404,6 @@ def main(screen):
 
 			i += 1
 
-		# for bullet in bullets:
-		# 	if bullet.getVertices()[0][1] < 0:
-		# 		bullets.remove(bullet)
-		# 		continue
-
-		# 	for e_bullet in e_bullets:
-		# 		if collided(e_bullet, bullet):
-		# 			bullets.remove(bullet)
-		# 			e_bullets.remove(e_bullet)
-
-		# 		if collided(e_bullet, player):
-		# 			player.health -= 1
-					
-		# 			if player.health == 0:
-		# 				zoomIn(player)
-
-		# 	for enemy in enemies:
-		# 		if player.crosshair:
-		# 			print(enemy.getVertices()[0][0], centre, enemy.getVertices()[1][0])
-	
-		# 		if player.crosshair and enemy.getVertices()[0][0] < centre < enemy.getVertices()[1][0]:
-		# 			enemy.health = 0
-		# 			continue
-
-		# 		elif collided(enemy, bullet):					
-		# 			bullets.remove(bullet)
-		# 			enemy.health -= bullet.damage
-				
-		# 		if enemy.health <= 0:
-		# 			enemies_killed += 1
-		# 			enemies.remove(enemy)
-					# if random() < 0.5:
-					# 	k = random()
-						
-					# 	if k < 1:
-					# 		type_pu = 4
-					# 	elif k < 0.05:
-					# 		type_pu = 2
-					# 	elif k < 0.31:
-					# 		type_pu = 3
-					# 	elif k < 0.40:
-					# 		type_pu = 1
-					# 	else:
-					# 		type_pu = 0
-						
-					# 	powerups.append(PowerUp(enemy.getVertices()[0], type_pu))
-
-		# 			if enemies_killed % 20 == 0:
-		# 				enemy_spawn_chance += 0.5
-		# 				enemy_yvel += 0.3
-		# 				enemy_health += 0.5
-					
-		# 			continue
-
-		# 		if collided(enemy, player) or enemy.getVertices()[0][1] > HEIGHT:
-		# 			enemies.remove(enemy)
-		# 			player.health -= 1
-					
-		# 			if player.health == 0:
-		# 				zoomIn(player)
-
-		# for powerup in powerups:
-		# 	# POWERUPS = ["t_increase_bullets", "t_ship_vel", "t_bomb", "t_double_bullets"]
-		# 	if collided(powerup, player):
-		# 		if powerup.type_pu == 0:
-		# 			bullets_ps += 1
-		# 			bullets_ps = min(bullets_ps, FPS // 3)
-		# 			print(bullets_ps)
-		# 		elif powerup.type_pu == 1:
-		# 			player_xvel += 1
-		# 		elif powerup.type_pu == 2:
-		# 			enemies = []
-		# 		elif powerup.type_pu == 3:
-		# 			bullet_dmg += 0.5
-		# 			print(bullet_dmg)
-		# 		else:
-		# 			player.crosshair = True
-		# 			player_xvel += 5
-		# 			crosshair_count = 0
-
-		# 		powerups.remove(powerup)
-
-		# 	if powerup.getVertices()[0][1] > HEIGHT:
-		# 		powerups.remove(powerup)
-
 		if player.crosshair:
 			bresenham(screen, player.center(), [player.center()[0], 0], RED)
 			bresenham(screen, [player.center()[0] - 1, player.center()[1]], [player.center()[0] - 1, 0], NEON_RED)
@@ -495,29 +423,24 @@ def main(screen):
 				freeze_count = 0
 				froze = False
 
-		#player.mapToWindow(j, v)
-		#player.clip(DEFAULT_VIEW)
 		player.scanline(screen, TEX)
 
 		for powerup in powerups:
 			powerup.moveY(1.2 * enemy_yvel)
-			#powerup.mapToWindow(j, v)
-			#powerup.clip(DEFAULT_VIEW)		
+			powerup.clip(DEFAULT_VIEW)		
 			powerup.scanline(screen, TEX)
 		
 		for enemy in enemies:
 			enemy.moveY(enemy_yvel)
 			if random() < 0.01:
 				enemy.moveX(choice([-3 * enemy_yvel, 3 * enemy_yvel]))
-			#enemy.mapToWindow(j, v)
-			#enemy.clip(DEFAULT_VIEW)		
+			
+			enemy.clip(DEFAULT_VIEW)		
 			enemy.scanline(screen, TEX)
 
-#		print(len(powerups))
 		for bullet in bullets:
 			bullet.moveY(-5)
-			#bullet.mapToWindow(j, v)
-			#bullet.clip(DEFAULT_VIEW)		
+			bullet.clip(DEFAULT_VIEW)		
 			bullet.draw(screen, bullet.getColor())
 
 		for event in pygame.event.get():
