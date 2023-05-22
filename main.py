@@ -23,6 +23,18 @@ os.environ['SDL_VIDEO_WINDOW_POS'] = f"{window_pos_x},{window_pos_y}"
 
 FPS = 30
 
+pygame.mixer.music.set_volume(0.07)
+music = pygame.mixer.music.load(join("music", "BgMusic.ogg"))
+pygame.mixer.music.play(-1)
+
+bullet_sound = pygame.mixer.Sound(join("music", "shotfired.ogg"))
+bomb_sound = pygame.mixer.Sound(join("music", "bomb.wav"))
+dead_sound = pygame.mixer.Sound(join("music", "dead_sound.wav"))
+bullet_sound.set_volume(0.1)
+bomb_sound.set_volume(0.1)
+dead_sound.set_volume(0.3)
+laser_sound = pygame.mixer.Sound(join("music", "laser.wav"))
+
 def load_textures():
 	path = "res"
 
@@ -159,13 +171,15 @@ def main(screen):
 			powerups.append(PowerUp(enemy.center(), type_pu))
 
 	def zoomIn():
+		pygame.mixer.music.pause()
+		dead_sound.play()
 		player = Player()
 
 		player.translate([-8, -(HEIGHT / 2 - 20)])
 
 		x = 0
 		running = True
-		while x < 144 and running:
+		while x < 90 and running:
 			clear(screen, [background, bg_img])
 			for event in pygame.event.get():
 				if event.type == pygame.QUIT:
@@ -173,16 +187,17 @@ def main(screen):
 
 			keyspressed = pygame.key.get_pressed()
 			if keyspressed[pygame.K_ESCAPE]:
+				print(enemies_killed)
 				pygame.quit()
 				quit()
 
-			v[1][0] += 0.03
-			v[1][1] += 0.03
-			v[0][0] -= 0.03
-			v[0][1] -= 0.03
+			v[1][0] += 0.07
+			v[1][1] += 0.07
+			v[0][0] -= 0.07
+			v[0][1] -= 0.07
 
 			player.mapToWindow(j, v)
-			player.rotate(5)
+			player.rotate(8)
 			player.clip(DEFAULT_VIEW)
 			player.scanline(screen, TEX)
 			update()
@@ -199,6 +214,7 @@ def main(screen):
 			if keyspressed[pygame.K_ESCAPE]:
 				running = False
 
+		print(enemies_killed)
 		pygame.quit()
 		quit()
 
@@ -230,6 +246,7 @@ def main(screen):
 
 		if c % (FPS // min(bullets_ps, FPS)) == 0 and not player.crosshair:
 			bullets.append(Bullet([player.center()[0], player.center()[1] - 16], bullet_dmg))
+			bullet_sound.play()
 
 		i = 0
 		while i < len(enemies) and player.crosshair:
@@ -325,6 +342,7 @@ def main(screen):
 
 				if type_pu == 0:
 					qt_enemy = len(enemies)
+					bomb_sound.play()
 					enemies.clear()
 
 					enemies_killed += qt_enemy
@@ -339,8 +357,10 @@ def main(screen):
 				elif type_pu == 1:
 					if player.crosshair:
 						crosshair_count = 0
+						laser_sound.play()
 					
 					else:
+						laser_sound.play()
 						player.crosshair = True
 						player_xvel += 5
 						crosshair_count = 0
@@ -350,6 +370,7 @@ def main(screen):
 						freeze_count = 0
 
 					else:
+						pygame.mixer.music.pause()
 						prev_vel = deepcopy(enemy_yvel)
 						enemy_yvel = 0
 						freeze_count = 0
@@ -456,7 +477,9 @@ def main(screen):
 		# 		powerups.remove(powerup)
 
 		if player.crosshair:
-			bresenham(screen, player.center(), [player.center()[0], 0], NEON_RED)
+			bresenham(screen, player.center(), [player.center()[0], 0], RED)
+			bresenham(screen, [player.center()[0] - 1, player.center()[1]], [player.center()[0] - 1, 0], NEON_RED)
+			bresenham(screen, [player.center()[0] + 1, player.center()[1]], [player.center()[0] + 1, 0], NEON_RED)
 			crosshair_count += 1
 			
 			if crosshair_count % (5 * FPS) == 0:
@@ -467,6 +490,7 @@ def main(screen):
 			freeze_count += 1
 
 			if freeze_count % (5 * FPS) == 0:
+				pygame.mixer.music.play(-1)
 				enemy_yvel += prev_vel
 				freeze_count = 0
 				froze = False
@@ -507,7 +531,7 @@ def main(screen):
 		c = (c + 1) % FPS
 
 		#print(f"powerups = {len(powerups)}, enemies = {len(enemies)}, bullets = {len(bullets)}, bullet_dmg = {bullet_dmg}")
-		print(clock.get_fps())
+	
 
 	pygame.quit()
 	quit()
