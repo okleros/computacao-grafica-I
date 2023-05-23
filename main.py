@@ -12,8 +12,9 @@ screen_width, screen_height = pygame.display.Info().current_w, pygame.display.In
 
 WIDTH = 384
 HEIGHT = 384
+SIDEBAR_OFFSET = 100
 
-screen = pygame.display.set_mode((WIDTH, HEIGHT + 200))
+screen = pygame.display.set_mode((WIDTH + SIDEBAR_OFFSET, HEIGHT))
 pygame.display.set_caption("Space Invaders")
 
 os.environ['SDL_VIDEO_CENTERED'] = '1'
@@ -62,6 +63,9 @@ POWERUPS = ["t_bomb", "t_laser", "t_freeze", "t_ship_speed", "t_damage", "t_more
 ENEMIES = ["easy", "medium", "hard", "expert"]
 
 DEFAULT_VIEW = [[0, 0], [WIDTH - 1, 0], [WIDTH - 1, HEIGHT - 1], [0, HEIGHT - 1]]
+SIDEBAR_VIEW = [[WIDTH - 1, 0], [WIDTH - 1 + SIDEBAR_OFFSET, 0], [WIDTH - 1 + SIDEBAR_OFFSET, HEIGHT - 1], [WIDTH - 1, HEIGHT - 1]]
+DV = Polygon(DEFAULT_VIEW)
+SV = Polygon(SIDEBAR_VIEW)
 
 class Bullet(Rectangle):
 	def __init__(self, p, damage):
@@ -76,18 +80,16 @@ class Bullet(Rectangle):
 
 class Player(Rectangle):
 	def __init__(self):
-		super().__init__(WIDTH / 2, HEIGHT - 30, 20, 20)
+		super().__init__(WIDTH / 2, HEIGHT - 30, 16, 16)
 		self.setTexture(TEXTURES["ship"])
 		self.health = 3
 		self.crosshair = False
 
 class Enemy(Rectangle):
 	def __init__(self, health, player):
-		super().__init__(randint(int(max(player.center()[0] - 200, 30)), int(min(player.center()[0] + 200, WIDTH - 30))), -14, 16, 16)
+		super().__init__(randint(int(max(player.center()[0] - 200, 30)), int(min(player.center()[0] + 200, WIDTH - 30))), -14, 14, 14)
 		self.health = min(health, 4)
 		self.setTexture(TEXTURES[ENEMIES[int(self.health) - 1]])
-		self.scale([1 + 0.01 * self.health, 1 + 0.01 * self.health])
-
 
 class PowerUp(Rectangle):
 	def __init__(self, p, type_pu):
@@ -114,28 +116,30 @@ def collided(polygon1, polygon2):
 def get_background(bg):
 	_, _, width, height = bg.get_rect()
 	tiles = []
-	print(width, height)
 
-	for i in range(WIDTH // width + 1):
-		for j in range(HEIGHT // height):
-			pos = [i * width, j * height - 1]
+	for i in range(WIDTH // width):
+		for j in range(HEIGHT // height + 1):
+			pos = [i * width, j * height]
 			tiles.append(pos)
 
 	return [tiles, bg]
 
 def main(screen):
 	background, bg_img = get_background(TEXTURES["background3"])
-	j = [[0, 0], [WIDTH, HEIGHT]]
-	v = [[0, 0], [WIDTH, HEIGHT]]
+	j = [[0, 0], [WIDTH - 1, HEIGHT - 1]]
+	v = [[0, 0], [WIDTH - 1, HEIGHT - 1]]
+
+	j2 = [[0, 0], [WIDTH - 1, HEIGHT - 1]]
+	v2 = [[WIDTH - 1, HEIGHT - 100], [WIDTH - 1 + 100, HEIGHT - 1]]
 
 	enemy_spawn_chance = 2
 	bullet_dmg = 1
-	bullets_ps = 2
+	bullets_ps = 1
 	enemy_health = 1
 	enemies_killed = 1
 	player_xvel = 3
-	bullets_ao = 1
 	enemy_yvel = 1
+	bullet_yvel = 5
 	zoom_in = 0
 	freeze_count = 0
 	
@@ -145,7 +149,6 @@ def main(screen):
 	powerups = []
 
 	player = Player()
-	print(player)
 	
 	clock = pygame.time.Clock()
 
@@ -154,7 +157,7 @@ def main(screen):
 	c = 0
 
 	def randomPowerUp(enemy):
-		if random() < 0.67:
+		if random() < 0.3 * enemy.health:
 			k = random()
 			
 			if k < 0.01:
@@ -190,7 +193,7 @@ def main(screen):
 		x = 0
 		running = True
 		while x < 90 and running:
-			clear(screen, [background, bg_img])
+			clear(screen, [background, bg_img], DV, SV)
 			for event in pygame.event.get():
 				if event.type == pygame.QUIT:
 					running = False
@@ -229,23 +232,22 @@ def main(screen):
 		quit()
 
 	while running:
-		#bresenham(screen, [0, HEIGHT], [WIDTH, HEIGHT], NEON_RED)
 		clock.tick(FPS)
 		if froze:
-			clear(screen)
+			clear(screen, None, DV, SV)
 		
 		else:
-			clear(screen, [background, bg_img])
+			clear(screen, [background, bg_img], DV, SV)
 
 		if random() <= 0.01 * enemy_spawn_chance and len(enemies) < 5:
 			enemies.append(Enemy(enemy_health, player))
 		
 		keyspressed = pygame.key.get_pressed()
 
-		if (keyspressed[pygame.K_a] or keyspressed[pygame.K_LEFT]) and player.getVertices()[0][0] - 20 >= 0:
+		if (keyspressed[pygame.K_a] or keyspressed[pygame.K_LEFT]) and player.getVertices()[0][0] - 8 >= 0:
 			player.moveX(-player_xvel)
 		
-		if (keyspressed[pygame.K_d] or keyspressed[pygame.K_RIGHT]) and player.getVertices()[1][0] + 20 < WIDTH:
+		if (keyspressed[pygame.K_d] or keyspressed[pygame.K_RIGHT]) and player.getVertices()[1][0] + 8 < WIDTH:
 			player.moveX(player_xvel)
 		
 		if keyspressed[pygame.K_ESCAPE]:
@@ -356,7 +358,11 @@ def main(screen):
 				if type_pu == 0:
 					qt_enemy = len(enemies)
 					bomb_sound.play()
+					enemies_bombed = enemies
 					enemies.clear()
+					
+					for enemy in enemies_bombed:
+						randomPowerUp(enemy)
 
 					enemies_killed += qt_enemy
 
@@ -405,9 +411,9 @@ def main(screen):
 			i += 1
 
 		if player.crosshair:
-			bresenham(screen, player.center(), [player.center()[0], 0], RED)
-			bresenham(screen, [player.center()[0] - 1, player.center()[1]], [player.center()[0] - 1, 0], NEON_RED)
-			bresenham(screen, [player.center()[0] + 1, player.center()[1]], [player.center()[0] + 1, 0], NEON_RED)
+			bresenham(screen, player.center(), [player.center()[0], 0], NEON_RED)
+			bresenham(screen, [player.center()[0] - 1, player.center()[1]], [player.center()[0] - 1, 0], RED)
+			bresenham(screen, [player.center()[0] + 1, player.center()[1]], [player.center()[0] + 1, 0], RED)
 			crosshair_count += 1
 			
 			if crosshair_count % (5 * FPS) == 0:
@@ -427,7 +433,7 @@ def main(screen):
 
 		for powerup in powerups:
 			powerup.moveY(1.2 * enemy_yvel)
-			powerup.clip(DEFAULT_VIEW)		
+			powerup.clip(DEFAULT_VIEW)
 			powerup.scanline(screen, TEX)
 		
 		for enemy in enemies:
@@ -435,12 +441,12 @@ def main(screen):
 			if random() < 0.01:
 				enemy.moveX(choice([-3 * enemy_yvel, 3 * enemy_yvel]))
 			
-			enemy.clip(DEFAULT_VIEW)		
+			enemy.clip(DEFAULT_VIEW)
 			enemy.scanline(screen, TEX)
 
 		for bullet in bullets:
-			bullet.moveY(-5)
-			bullet.clip(DEFAULT_VIEW)		
+			bullet.moveY(-bullet_yvel)
+			bullet.clip(DEFAULT_VIEW)
 			bullet.draw(screen, bullet.getColor())
 
 		for event in pygame.event.get():
@@ -452,9 +458,6 @@ def main(screen):
 		update()
 
 		c = (c + 1) % FPS
-
-		#print(f"powerups = {len(powerups)}, enemies = {len(enemies)}, bullets = {len(bullets)}, bullet_dmg = {bullet_dmg}")
-	
 
 	pygame.quit()
 	quit()

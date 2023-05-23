@@ -65,7 +65,7 @@ def setpixel(screen, p: tuple, color: Color) -> None:
     screen.set_at(p, pygame_color)
 
 def getpixel(surf, p: tuple) -> Color:
-    p = normalize(screen, p)
+    p = normalize(surf, p)
 
     if p == -1:
         return -1
@@ -94,7 +94,7 @@ CYAN = Color(0, 255, 255)
 MAGENTA = Color(255, 0, 255)
 YELLOW = Color(255, 255, 0)
 BROWN = Color(150, 75, 0)
-GREY = Color(0x51, 0x51, 0x51)
+GREY = Color(0xB0, 0xB0, 0xB0)
 NEON_GREEN = Color(57, 255, 20)
 NEON_RED = Color(255, 49, 49)
 NEON_YELLOW = Color(255, 240, 31)
@@ -502,15 +502,9 @@ class Polygon:
                       [0, b, vyi - b * wyi],
                       [0, 0,             1]])
 
-        #p = self.center()
-
-        #self.translate([-p[0], -p[1]])
-
         self.transform(M)
 
         return self.__vertices
-
-        #self.translate(p)
 
     def draw(self, screen, color: Color) -> None:
         if self.__clipped is not None:
@@ -773,11 +767,11 @@ lerp = lambda a, b, t: (1 - t) * a + t * b
 
 lerpColor = lambda c1, c2, t: round(Color(lerp(c1.r, c2.r, t), lerp(c1.g, c2.g, t), lerp(c1.b, c2.b, t)))
 
-def floodFill(p: tuple, color: Color) -> None:
-    def isValid(p: tuple, icolor: Color) -> bool:
+def floodFill(screen, p: tuple, color: Color) -> None:
+    def isValid(screen, p: tuple, icolor: Color) -> bool:
         p = normalize(screen, p)
 
-        if (p == -1 or getpixel(p) != icolor):
+        if (p == -1 or getpixel(screen, p) != icolor):
             return False
 
         return True
@@ -789,7 +783,7 @@ def floodFill(p: tuple, color: Color) -> None:
 
     stack = []
 
-    icolor = getpixel(p)
+    icolor = getpixel(screen, p)
 
     stack.append(p)
 
@@ -799,7 +793,7 @@ def floodFill(p: tuple, color: Color) -> None:
         x = pixel[0]
         y = pixel[1]
 
-        if isValid(pixel, icolor):
+        if isValid(screen, pixel, icolor):
             setpixel(screen, pixel, color)
 
             north = (x, y - 1)
@@ -807,71 +801,34 @@ def floodFill(p: tuple, color: Color) -> None:
             east = (x + 1, y)
             west = (x - 1, y)
 
-            if isValid(north, icolor):
+            if isValid(screen, north, icolor):
                 stack.append(north)
 
-            if isValid(south, icolor):
+            if isValid(screen, south, icolor):
                 stack.append(south)
 
-            if isValid(east, icolor):
+            if isValid(screen, east, icolor):
                 stack.append(east)
 
-            if isValid(west, icolor):
-                stack.append(west)
-
-def boundaryFill(p: tuple, bcolor: Color, color: Color) -> None:
-    def isValid(p: tuple, bcolor: Color) -> bool:
-        p = normalize(screen, p)
-
-        if (p == -1 or getpixel(p) == bcolor):
-            return False
-
-        return True
-
-    p = normalize(screen, p)
-
-    if p == -1:
-        return
-
-    stack = []
-
-    stack.append(p)
-
-    while stack:
-        pixel = stack.pop()
-
-        x = pixel[0]
-        y = pixel[1]
-
-        if isValid(pixel, bcolor):
-            setpixel(screen, pixel, color)
-
-            north = (x, y - 1)
-            south = (x, y + 1)
-            east = (x + 1, y)
-            west = (x - 1, y)
-
-            if isValid(north, bcolor):
-                stack.append(north)
-
-            if isValid(south, bcolor):
-                stack.append(south)
-
-            if isValid(east, bcolor):
-                stack.append(east)
-
-            if isValid(west, bcolor):
+            if isValid(screen, west, icolor):
                 stack.append(west)
 
 def update():
     pygame.display.flip()
 
-def clear(screen, background = None):
+def clear(screen, background = None, outline = None, sidebar = None):
     if background is None:
         screen.fill((0, 0, 0, 0))
+        outline.draw(screen, GREY)
+        sidebar.draw(screen, GREY)
+
     else:
         for tile in background[0]:
             screen.blit(background[1], tile)
+
+        outline.draw(screen, GREY)
+        screen.fill((0, 0, 0, 0), pygame.Rect(sidebar.getVertices()[0], sidebar.getVertices()[2]))
+        sidebar.draw(screen, GREY)
 
 def main():
     j = [[0, 0], [WIDTH, HEIGHT]]
