@@ -14,8 +14,9 @@ WIDTH = 384
 HEIGHT = 384
 SIDEBAR_OFFSET = 100
 
-screen = pygame.display.set_mode((WIDTH + SIDEBAR_OFFSET, HEIGHT))
+screen0 = pygame.display.set_mode((WIDTH + SIDEBAR_OFFSET, HEIGHT))
 pygame.display.set_caption("Space Invaders")
+screen = pygame.PixelArray(screen0)
 
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 window_pos_x = (screen_width - WIDTH) // 2
@@ -43,6 +44,18 @@ bomb_sound.set_volume(0.3)
 dead_sound.set_volume(0.3)
 enemy_death_sound.set_volume(0.06)
 
+def load_font():
+	path = "font"
+
+	letters = [f for f in os.listdir(path) if isfile(join(path, f))]
+
+	all_letters = {}
+
+	for letter in letters:
+		lt = pygame.image.load(join(path, letter)).convert()
+		all_letters[letter.replace(".png", "")] = lt
+
+	return all_letters
 
 def load_textures():
 	path = "res"
@@ -58,6 +71,7 @@ def load_textures():
 	return all_images
 	
 TEXTURES = load_textures()
+FONT = load_font()
 
 POWERUPS = ["t_bomb", "t_laser", "t_freeze", "t_ship_speed", "t_damage", "t_more_bullets"]
 ENEMIES = ["easy", "medium", "hard", "expert"]
@@ -66,6 +80,23 @@ DEFAULT_VIEW = [[0, 0], [WIDTH - 1, 0], [WIDTH - 1, HEIGHT - 1], [0, HEIGHT - 1]
 SIDEBAR_VIEW = [[WIDTH - 1, 0], [WIDTH - 1 + SIDEBAR_OFFSET, 0], [WIDTH - 1 + SIDEBAR_OFFSET, HEIGHT - 1], [WIDTH - 1, HEIGHT - 1]]
 DV = Polygon(DEFAULT_VIEW)
 SV = Polygon(SIDEBAR_VIEW)
+
+#floodFill(screen, [WIDTH / 2, HEIGHT / 2], NEON_RED)
+#update()
+#sleep(2)
+
+def write(screen, dest, text, size):
+	text_length = len(text)
+
+	if size == 16:
+		for i in range(text_length):
+			screen[dest[0] + i * size:dest[0] + i * size + size, dest[1]:dest[1] + size] = pygame.PixelArray(FONT[str(ord(text[i]))])
+
+	else:
+		for i in range(text_length):
+			k = Rectangle(dest[0] + i * size, dest[1], size, size)
+			k.setTexture(FONT[str(ord(text[i]))])
+			k.scanline(screen, TEX)
 
 class Bullet(Rectangle):
 	def __init__(self, p, damage):
@@ -84,18 +115,21 @@ class Player(Rectangle):
 		self.setTexture(TEXTURES["ship"])
 		self.health = 3
 		self.crosshair = False
+		self.setColor(NEON_GREEN)
 
 class Enemy(Rectangle):
 	def __init__(self, health, player):
 		super().__init__(randint(int(max(player.center()[0] - 200, 30)), int(min(player.center()[0] + 200, WIDTH - 30))), -14, 14, 14)
 		self.health = min(health, 4)
 		self.setTexture(TEXTURES[ENEMIES[int(self.health) - 1]])
+		self.setColor(NEON_RED)
 
 class PowerUp(Rectangle):
 	def __init__(self, p, type_pu):
 		super().__init__(p[0], p[1], 16, 16)
 		self.setTexture(TEXTURES[POWERUPS[type_pu]])
 		self.type_pu = type_pu
+		self.setColor(CYAN)
 
 def collided(polygon1, polygon2):
 	vert1 = polygon1.getVertices()
@@ -125,7 +159,8 @@ def get_background(bg):
 	return [tiles, bg]
 
 def main(screen):
-	background, bg_img = get_background(TEXTURES["background3"])
+	background = pygame.PixelArray(TEXTURES["background"])
+
 	j = [[0, 0], [WIDTH - 1, HEIGHT - 1]]
 	v = [[0, 0], [WIDTH - 1, HEIGHT - 1]]
 
@@ -134,9 +169,9 @@ def main(screen):
 
 	enemy_spawn_chance = 2
 	bullet_dmg = 1
-	bullets_ps = 1
+	bullets_ps = 2
 	enemy_health = 1
-	enemies_killed = 1
+	enemies_killed = 0
 	player_xvel = 3
 	enemy_yvel = 1
 	bullet_yvel = 5
@@ -157,7 +192,7 @@ def main(screen):
 	c = 0
 
 	def randomPowerUp(enemy):
-		if random() < 0.3 * enemy.health:
+		if len(powerups) < 3 and random() < 0.5 * enemy_health:
 			k = random()
 			
 			if k < 0.01:
@@ -183,6 +218,9 @@ def main(screen):
 			
 			powerups.append(PowerUp(enemy.center(), type_pu))
 
+		else:
+			return
+
 	def zoomIn():
 		pygame.mixer.music.pause()
 		dead_sound.play()
@@ -193,7 +231,7 @@ def main(screen):
 		x = 0
 		running = True
 		while x < 90 and running:
-			clear(screen, [background, bg_img], DV, SV)
+			clear(screen, background)
 			for event in pygame.event.get():
 				if event.type == pygame.QUIT:
 					running = False
@@ -231,14 +269,16 @@ def main(screen):
 		pygame.quit()
 		quit()
 
+	write(screen, [WIDTH + 25, 10], f"{enemies_killed:03d}", 16)
+
 	while running:
 		clock.tick(FPS)
 		if froze:
-			clear(screen, None, DV, SV)
+			clear(screen, None)
 		
 		else:
-			clear(screen, [background, bg_img], DV, SV)
-
+			clear(screen, background)
+		
 		if random() <= 0.01 * enemy_spawn_chance and len(enemies) < 5:
 			enemies.append(Enemy(enemy_health, player))
 		
@@ -269,6 +309,7 @@ def main(screen):
 				enemy_death_sound.play()
 				enemies.pop(i)
 				enemies_killed += 1
+				write(screen, [WIDTH + 25, 10], f"{enemies_killed:03d}", 16)
 
 				if enemies_killed % 15 == 0:
 					enemy_yvel += 0.2
@@ -308,6 +349,7 @@ def main(screen):
 				enemy_death_sound.play()
 				enemies.pop(i)
 				enemies_killed += 1
+				write(screen, [WIDTH + 25, 10], f"{enemies_killed:03d}", 16)
 
 				if enemies_killed % 15 == 0:
 					enemy_yvel += 0.2
@@ -325,7 +367,7 @@ def main(screen):
 			if collided(player, enemy) or enemy.getVertices()[0][1] > HEIGHT:
 				player.health -= 1
 
-				if player.health == 0:
+				if player.health <= 0:
 					zoomIn()
 
 				enemies.pop(i)
@@ -358,13 +400,14 @@ def main(screen):
 				if type_pu == 0:
 					qt_enemy = len(enemies)
 					bomb_sound.play()
-					enemies_bombed = enemies
+					enemies_bombed = enemies.copy()
 					enemies.clear()
 					
 					for enemy in enemies_bombed:
 						randomPowerUp(enemy)
 
 					enemies_killed += qt_enemy
+					write(screen, [WIDTH + 25, 10], f"{enemies_killed:03d}", 16)
 
 					if enemies_killed % 15 == 0:
 						if not froze:
@@ -429,20 +472,23 @@ def main(screen):
 				freeze_count = 0
 				froze = False
 
-		player.scanline(screen, TEX)
+		#player.scanline(screen, TEX)
+		player.draw(screen, NEON_GREEN)
 
 		for powerup in powerups:
 			powerup.moveY(1.2 * enemy_yvel)
 			powerup.clip(DEFAULT_VIEW)
-			powerup.scanline(screen, TEX)
-		
+			#powerup.scanline(screen, TEX)
+			powerup.draw(screen, CYAN)
+
 		for enemy in enemies:
 			enemy.moveY(enemy_yvel)
 			if random() < 0.01:
 				enemy.moveX(choice([-3 * enemy_yvel, 3 * enemy_yvel]))
 			
 			enemy.clip(DEFAULT_VIEW)
-			enemy.scanline(screen, TEX)
+			#enemy.scanline(screen, TEX)
+			enemy.draw(screen, NEON_RED)
 
 		for bullet in bullets:
 			bullet.moveY(-bullet_yvel)
@@ -452,12 +498,18 @@ def main(screen):
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				pygame.display.flip()
-				pygame.image.save(screen, "./output2.png")
+				pygame.image.save(screen0, "./output2.png")
 				running = False
+
+		DV.draw(screen, WHITE * 0.8)
+		SV.draw(screen, WHITE * 0.8)
 
 		update()
 
+		#print(clock.get_fps())
+
 		c = (c + 1) % FPS
+		write(screen, [WIDTH + 25, HEIGHT - 30], str(int(clock.get_fps()))[:2], 16)
 
 	pygame.quit()
 	quit()

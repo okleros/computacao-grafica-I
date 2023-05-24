@@ -2,9 +2,6 @@ import pygame, numpy as np
 from math import floor, sin, cos, pi, isnan
 from copy import deepcopy
 
-#WIDTH = HEIGHT = 500
-#screen = pygame.display.set_mode((WIDTH, HEIGHT))
-
 # Define the Color class
 class Color:
     def __init__(self, r: int, g: int, b: int, a: int = 255) -> None:
@@ -50,7 +47,7 @@ def normalize(screen, p: tuple) -> tuple:
     x = p[0]
     y = p[1]
 
-    if not (0 <= x < screen.get_width()) or not (0 <= y < screen.get_height()):
+    if not (0 <= x < len(screen)) or not (0 <= y < len(screen[0])):
         return -1
 
     return (int(x), int(y))
@@ -62,7 +59,7 @@ def setpixel(screen, p: tuple, color: Color) -> None:
         return
 
     pygame_color = pygame.Color(int(color.r), int(color.g), int(color.b), int(color.a))
-    screen.set_at(p, pygame_color)
+    screen[p[0]][p[1]] = pygame_color
 
 def getpixel(surf, p: tuple) -> Color:
     p = normalize(surf, p)
@@ -70,17 +67,17 @@ def getpixel(surf, p: tuple) -> Color:
     if p == -1:
         return -1
 
-    pygame_color = surf.get_at(p)
+    pygame_color = pygame.Color(surf[p[0], p[1]] << 8 | 0xff)
     return Color(pygame_color.r, pygame_color.g, pygame_color.b, pygame_color.a)
 
 def getpixelTex(tex, p: tuple) -> Color:
     x = p[0] % 1
     y = p[1] % 1
 
-    x = floor(x * (tex.get_width()))
-    y = floor(y * (tex.get_height()))
+    x = floor(x * (len(tex)))
+    y = floor(y * (len(tex[0])))
 
-    pygame_color = tex.get_at((x, y))
+    pygame_color = pygame.Color(tex[x, y] << 8 | 0xFF)
 
     return Color(pygame_color.r, pygame_color.g, pygame_color.b, pygame_color.a)
 
@@ -703,7 +700,7 @@ class Polygon:
                     k += 1
 
     def setTexture(self, tex: pygame.surface) -> None:
-        self.__tex = tex
+        self.__tex = pygame.PixelArray(tex)
 
     def setColor(self, color: Color) -> None:
         self.__color = color
@@ -713,7 +710,7 @@ class Polygon:
 
 class Rectangle(Polygon):
     def __init__(self, x, y, width, height):
-        super().__init__([[x, y, BLACK, [0, 0]], [x + width, y, BLACK, [1, 0]], [x + width, y + height, BLACK, [1, 1]], [x, y + height, BLACK, [0, 1]]])
+        super().__init__([[x, y, RED, [0, 0]], [x + width, y, GREEN, [1, 0]], [x + width, y + height, BLUE, [1, 1]], [x, y + height, MAGENTA, [0, 1]]])
 
 def intersec(scan: int, seg: tuple) -> int:
     trocou = False
@@ -816,19 +813,12 @@ def floodFill(screen, p: tuple, color: Color) -> None:
 def update():
     pygame.display.flip()
 
-def clear(screen, background = None, outline = None, sidebar = None):
-    if background is None:
-        screen.fill((0, 0, 0, 0))
-        outline.draw(screen, GREY)
-        sidebar.draw(screen, GREY)
+def clear(screen, background = None):
+    if background is not None:
+        screen[:384, :384] = background[:384, :384]
 
     else:
-        for tile in background[0]:
-            screen.blit(background[1], tile)
-
-        outline.draw(screen, GREY)
-        screen.fill((0, 0, 0, 0), pygame.Rect(sidebar.getVertices()[0], sidebar.getVertices()[2]))
-        sidebar.draw(screen, GREY)
+        screen[:384, :384] = 0
 
 def main():
     j = [[0, 0], [WIDTH, HEIGHT]]
