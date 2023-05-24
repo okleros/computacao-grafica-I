@@ -472,14 +472,14 @@ def main(screen):
 				freeze_count = 0
 				froze = False
 
-		#player.scanline(screen, TEX)
-		player.draw(screen, NEON_GREEN)
+		player.scanline(screen, TEX)
+		#player.draw(screen, NEON_GREEN)
 
 		for powerup in powerups:
 			powerup.moveY(1.2 * enemy_yvel)
 			powerup.clip(DEFAULT_VIEW)
-			#powerup.scanline(screen, TEX)
-			powerup.draw(screen, CYAN)
+			powerup.scanline(screen, TEX)
+			#powerup.draw(screen, CYAN)
 
 		for enemy in enemies:
 			enemy.moveY(enemy_yvel)
@@ -487,8 +487,8 @@ def main(screen):
 				enemy.moveX(choice([-3 * enemy_yvel, 3 * enemy_yvel]))
 			
 			enemy.clip(DEFAULT_VIEW)
-			#enemy.scanline(screen, TEX)
-			enemy.draw(screen, NEON_RED)
+			enemy.scanline(screen, TEX)
+			#enemy.draw(screen, NEON_RED)
 
 		for bullet in bullets:
 			bullet.moveY(-bullet_yvel)
