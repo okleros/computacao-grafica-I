@@ -85,7 +85,7 @@ SV = Polygon(SIDEBAR_VIEW)
 #update()
 #sleep(2)
 
-def write(screen, dest, text, size):
+def write(screen, dest: tuple, text: str, size: int) -> None:
 	text_length = len(text)
 
 	if size == 16:
