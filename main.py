@@ -79,15 +79,8 @@ SIDEBAR_VIEW = [[WIDTH - 1, 0], [WIDTH - 1 + SIDEBAR_OFFSET, 0], [WIDTH - 1 + SI
 DV = Polygon(DEFAULT_VIEW)
 SV = Polygon(SIDEBAR_VIEW)
 
-<<<<<<< HEAD
-def write(screen, dest, text, size):
-=======
-#floodFill(screen, [WIDTH / 2, HEIGHT / 2], NEON_RED)
-#update()
-#sleep(2)
 
 def write(screen, dest: tuple, text: str, size: int) -> None:
->>>>>>> 8db4223f1f8a29299c3fd184720a237daaff3edb
 	text_length = len(text)
 
 	if size == 16:
