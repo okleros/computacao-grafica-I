@@ -69,6 +69,8 @@ def load_textures():
 TEXTURES = load_textures()
 FONT = load_font()
 
+pygame.display.set_icon(TEXTURES["easy"])
+
 POWERUPS = ["t_bomb", "t_laser", "t_freeze", "t_ship_speed", "t_damage", "t_more_bullets", "t_health"]
 ENEMIES = ["easy", "medium", "hard", "hard1", "hard2", "hard3", "hard4", "hard5", "expert"]
 
@@ -185,10 +187,7 @@ def tela_inicial(screen):
 	poly_botao = polygon_botao.getVertices()
 	# Loop da tela inicial
 	# desenha e coloca textura na tela
-	polygon_tela.setColor(BLACK)
-	polygon_tela.draw(screen, BLACK)
-	polygon_tela.setTexture(TEXTURES["background4"])
-	clear(screen, pygame.PixelArray(TEXTURES["background4"]))
+	clear(screen, pygame.PixelArray(TEXTURES["background"]))
 	pygame.display.flip()
 
 	# Tentativa de desenhar saturno
