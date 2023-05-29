@@ -97,6 +97,10 @@ NEON_RED = Color(255, 49, 49)
 NEON_YELLOW = Color(255, 240, 31)
 NEON_ORANGE = Color(255, 95, 31)
 ORANGE = Color(255, 165, 0)
+MAGENTA_DARK = Color(118, 0, 169)
+CREAM = Color(255, 253, 208)
+PINK = Color(255, 203, 209)
+VIOLET = Color(79, 47, 79)
 
 def DDA(screen, pi: tuple, pf: tuple, color: Color) -> None:
     xi = pi[0]
@@ -201,13 +205,21 @@ def circle(screen, c: tuple, r: float, color: Color) -> None:
         yc = c[1]
 
         setpixel(screen, (xc + xp, yc + yp), color)
+        update()
         setpixel(screen, (xc - xp, yc + yp), color)
+        update()
         setpixel(screen, (xc + xp, yc - yp), color)
+        update()
         setpixel(screen, (xc - xp, yc - yp), color)
+        update()
         setpixel(screen, (xc + yp, yc + xp), color)
+        update()
         setpixel(screen, (xc - yp, yc + xp), color)
+        update()
         setpixel(screen, (xc + yp, yc - xp), color)
+        update()
         setpixel(screen, (xc - yp, yc - xp), color)
+        update()
 
     x = 0
     y = r
@@ -248,9 +260,13 @@ def ellipse(screen, center: tuple, a: int, b: int, color: Color) -> None:
     # Step along the major axis and plot the corresponding points
     while b2 * x <= a2 * y:
         setpixel(screen, (x + xc, y + yc), color)
+        update()
         setpixel(screen, (-x + xc, y + yc), color)
+        update()
         setpixel(screen, (x + xc, -y + yc), color)
+        update()
         setpixel(screen, (-x + xc, -y + yc), color)
+        update()
 
         x += 1
         p += db * x + b2
@@ -269,9 +285,13 @@ def ellipse(screen, center: tuple, a: int, b: int, color: Color) -> None:
     # Step along the minor axis and plot the corresponding points
     while a2 * y <= b2 * x:
         setpixel(screen, (x + center[0], y + center[1]), color)
+        update()
         setpixel(screen, (-x + center[0], y + center[1]), color)
+        update()
         setpixel(screen, (x + center[0], -y + center[1]), color)
+        update()
         setpixel(screen, (-x + center[0], -y + center[1]), color)
+        update()
 
         y += 1
         p += da * y + a2
@@ -710,7 +730,7 @@ class Polygon:
 
 class Rectangle(Polygon):
     def __init__(self, x, y, width, height):
-        super().__init__([[x, y, RED, [0, 0]], [x + width, y, GREEN, [1, 0]], [x + width, y + height, BLUE, [1, 1]], [x, y + height, MAGENTA, [0, 1]]])
+        super().__init__([[x, y, RED, [0, 0]], [x + width, y, NEON_ORANGE, [1, 0]], [x + width, y + height, RED, [1, 1]], [x, y + height, NEON_ORANGE, [0, 1]]])
 
 def intersec(scan: int, seg: tuple) -> int:
     trocou = False
@@ -792,6 +812,7 @@ def floodFill(screen, p: tuple, color: Color) -> None:
 
         if isValid(screen, pixel, icolor):
             setpixel(screen, pixel, color)
+            update()
 
             north = (x, y - 1)
             south = (x, y + 1)
@@ -815,10 +836,10 @@ def update():
 
 def clear(screen, background = None):
     if background is not None:
-        screen[:384, :384] = background[:384, :384]
+        screen[:, :] = background[:, :384]
 
     else:
-        screen[:384, :384] = 0
+        screen[:, :] = 0
 
 def main():
     j = [[0, 0], [WIDTH, HEIGHT]]

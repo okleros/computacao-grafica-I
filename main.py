@@ -1,5 +1,5 @@
 from auxfunc import *
-import os
+import os, sys
 from os.path import join, isfile
 from random import randint, random, choice
 from time import sleep
@@ -7,8 +7,6 @@ from copy import deepcopy
 
 pygame.init()
 screen_width, screen_height = pygame.display.Info().current_w, pygame.display.Info().current_h
-
-#print(screen_width, screen_height)
 
 WIDTH = 384
 HEIGHT = 384
@@ -29,11 +27,9 @@ def load_sound(name):
 	return pygame.mixer.Sound(join("music", name))
 
 pygame.mixer.music.set_volume(0.07)
-music = pygame.mixer.music.load(join("music", "BgMusic.ogg"))
+music = pygame.mixer.music.load(join("music", "BgMusic.wav"))
 
-pygame.mixer.music.play(-1)
-
-bullet_sound = load_sound("shotfired.ogg")
+bullet_sound = load_sound("shotfired.wav")
 bomb_sound = load_sound("bomb.wav")
 dead_sound = load_sound("dead_sound.wav")
 enemy_death_sound = load_sound("enemy_death_sound.wav")
@@ -73,17 +69,13 @@ def load_textures():
 TEXTURES = load_textures()
 FONT = load_font()
 
-POWERUPS = ["t_bomb", "t_laser", "t_freeze", "t_ship_speed", "t_damage", "t_more_bullets"]
-ENEMIES = ["easy", "medium", "hard", "expert"]
+POWERUPS = ["t_bomb", "t_laser", "t_freeze", "t_ship_speed", "t_damage", "t_more_bullets", "t_health"]
+ENEMIES = ["easy", "medium", "hard", "hard1", "hard2", "hard3", "hard4", "hard5", "expert"]
 
-DEFAULT_VIEW = [[0, 0], [WIDTH - 1, 0], [WIDTH - 1, HEIGHT - 1], [0, HEIGHT - 1]]
+DEFAULT_VIEW = [[0, 0], [WIDTH - 1, 0], [WIDTH - 1, HEIGHT - 10], [0, HEIGHT - 10]]
 SIDEBAR_VIEW = [[WIDTH - 1, 0], [WIDTH - 1 + SIDEBAR_OFFSET, 0], [WIDTH - 1 + SIDEBAR_OFFSET, HEIGHT - 1], [WIDTH - 1, HEIGHT - 1]]
 DV = Polygon(DEFAULT_VIEW)
 SV = Polygon(SIDEBAR_VIEW)
-
-#floodFill(screen, [WIDTH / 2, HEIGHT / 2], NEON_RED)
-#update()
-#sleep(2)
 
 def write(screen, dest, text, size):
 	text_length = len(text)
@@ -103,10 +95,10 @@ class Bullet(Rectangle):
 		x =  p[0]
 		y =  p[1]
 
-		self.damage = min(damage, 4)
-		self.colors = [NEON_GREEN * 1.5, NEON_YELLOW * 1.5, NEON_ORANGE * 1.5, NEON_RED * 1.5]
+		self.damage = min(damage, 9)
+		self.colors = [GREEN * 1.5, NEON_GREEN * 1.5, YELLOW * 1.5, NEON_YELLOW * 1.5, ORANGE * 1.5, NEON_ORANGE * 1.5, RED * 1.5, NEON_RED * 1.5, WHITE]
 		
-		super().__init__(x, y, 1, 6)
+		super().__init__(x, y, 1, 4)
 		self.setColor(self.colors[round(self.damage - 1)])
 
 class Player(Rectangle):
@@ -120,14 +112,16 @@ class Player(Rectangle):
 class Enemy(Rectangle):
 	def __init__(self, health, player):
 		super().__init__(randint(int(max(player.center()[0] - 200, 30)), int(min(player.center()[0] + 200, WIDTH - 30))), -14, 14, 14)
-		self.health = min(health, 4)
+		self.health = min(health, 9)
 		self.setTexture(TEXTURES[ENEMIES[int(self.health) - 1]])
 		self.setColor(NEON_RED)
 
 class PowerUp(Rectangle):
 	def __init__(self, p, type_pu):
-		super().__init__(p[0], p[1], 16, 16)
-		self.setTexture(TEXTURES[POWERUPS[type_pu]])
+		super().__init__(p[0], p[1], 14, 14)
+		if type_pu != 6:
+			self.setTexture(TEXTURES[POWERUPS[type_pu]])
+		
 		self.type_pu = type_pu
 		self.setColor(CYAN)
 
@@ -158,8 +152,110 @@ def get_background(bg):
 
 	return [tiles, bg]
 
+def tela_inicial(screen):
+	# Definição do polígono do botão
+	polygon_botao = Polygon([
+		[(WIDTH + SIDEBAR_OFFSET) // 2 - 70, HEIGHT // 2 + 15, MAGENTA, [0, 0]],
+		[(WIDTH + SIDEBAR_OFFSET) // 2 + 70, HEIGHT // 2 + 15, PINK, [1, 0]],
+		[(WIDTH + SIDEBAR_OFFSET) // 2 + 70, HEIGHT // 2 + 65, BLACK, [1, 1]],
+		[(WIDTH + SIDEBAR_OFFSET) // 2 - 70, HEIGHT // 2 + 65, BLUE, [0, 1]]])
+
+	# Definição do polígono do nome do jogo
+	polygon_titulo = Polygon(
+		[[15, 15, MAGENTA_DARK, [0, 0]],
+		[WIDTH + SIDEBAR_OFFSET - 15, 15, VIOLET, [1, 0]],
+		[WIDTH + SIDEBAR_OFFSET - 15, HEIGHT / 4 - 10, BLUE, [1, 1]],
+		[15, HEIGHT / 4 - 10, PINK, [0, 1]]])
+
+	# Definição do polígono da tela de jogo
+	polygon_tela = Polygon([
+		[0, 0, MAGENTA_DARK, [0, 0]],
+		[WIDTH + SIDEBAR_OFFSET, 0, VIOLET, [3, 0]],
+		[WIDTH + SIDEBAR_OFFSET, HEIGHT, BLUE, [3, 3]], 
+		[0, HEIGHT, PINK, [0, 3]]])
+
+	# poligono para desenhar a bandeira do Brasil
+	b1 = Polygon([
+		[(WIDTH + SIDEBAR_OFFSET) / 2 + 150, HEIGHT / 2 + 40, RED, [0, 0]], 
+		[(WIDTH + SIDEBAR_OFFSET) / 2 + 150, HEIGHT / 2 + 48, RED, [1, 0]],
+		[(WIDTH + SIDEBAR_OFFSET) / 2 + 161, HEIGHT / 2 + 48, RED, [1, 1]], 
+		[(WIDTH + SIDEBAR_OFFSET) / 2 + 161, HEIGHT / 2 + 40, RED, [0, 1]]])
+
+	# Pega os vertices do polygono_botao para, futuramente, verificar cursor
+	poly_botao = polygon_botao.getVertices()
+	# Loop da tela inicial
+	# desenha e coloca textura na tela
+	polygon_tela.setColor(BLACK)
+	polygon_tela.draw(screen, BLACK)
+	polygon_tela.setTexture(TEXTURES["background4"])
+	clear(screen, pygame.PixelArray(TEXTURES["background4"]))
+	pygame.display.flip()
+
+	# Tentativa de desenhar saturno
+	raio=40
+	circle(screen, ((WIDTH + SIDEBAR_OFFSET) / 4 - 40,  HEIGHT / 2 - 30), raio, YELLOW)
+	floodFill(screen, ((WIDTH + SIDEBAR_OFFSET) / 4 - 40,  HEIGHT / 2 - 30), NEON_ORANGE)
+	ellipse(screen, ((WIDTH + SIDEBAR_OFFSET) / 4 - 40,  HEIGHT / 2 - 30), raio + 10, raio + 5, CREAM)
+	ellipse(screen, ((WIDTH + SIDEBAR_OFFSET) / 4 - 40,  HEIGHT / 2 - 30),raio + 13,raio + 2, CREAM)
+	ellipse(screen, ((WIDTH + SIDEBAR_OFFSET) / 4 - 40,  HEIGHT / 2 - 30), raio + 12,raio + 6, CREAM)
+	ellipse(screen, ((WIDTH + SIDEBAR_OFFSET) / 4 - 40,  HEIGHT / 2 - 30),raio + 13,raio + 7, CREAM)
+	ellipse(screen, ((WIDTH + SIDEBAR_OFFSET) / 4 - 40,  HEIGHT / 2 - 30),raio + 15,raio + 9, CREAM)
+	pygame.display.flip()
+
+	# tentativa de desenhar a Lua
+	raio=60
+	circle(screen, ((WIDTH + SIDEBAR_OFFSET) / 2 + 150,  HEIGHT / 2 + 110), raio, WHITE * 0.05)
+	update()
+	floodFill(screen, ((WIDTH + SIDEBAR_OFFSET) / 2 + 150,  HEIGHT / 2 + 110), GREY)
+	circle(screen, ((WIDTH + SIDEBAR_OFFSET) / 2 + 160,  HEIGHT / 2 + 80), raio - 43, BLACK)
+	circle(screen, ((WIDTH + SIDEBAR_OFFSET) / 2 + 125,  HEIGHT / 2 + 110), raio - 38, BLACK)
+	circle(screen, ((WIDTH + SIDEBAR_OFFSET) / 2 + 170,  HEIGHT / 2 + 120), raio - 45, BLACK)
+	circle(screen, ((WIDTH + SIDEBAR_OFFSET) / 2 + 150,  HEIGHT / 2 + 145),raio -  49, BLACK)
+	pygame.display.flip()
+	
+	# desenhando a bandeira do Brasil
+	b1.draw(screen, WHITE * 0.5)
+	b1.setTexture(TEXTURES["b6"])
+	bresenham(screen, ((WIDTH + SIDEBAR_OFFSET) / 2 + 150,  HEIGHT / 2 + 60), ((WIDTH + SIDEBAR_OFFSET) / 2 + 150, HEIGHT / 2 + 40), WHITE * 0.5)
+	pygame.display.flip()
+	b1.scanline(screen, TEX)
+	pygame.display.flip()
+	
+	DDAAA(screen, ((WIDTH + SIDEBAR_OFFSET) * 3 / 4 + 15, HEIGHT * 1/4 + 30), ((WIDTH + SIDEBAR_OFFSET) * 3 / 4 + 57, HEIGHT * 1 / 4 + 47), WHITE)
+	DDAAA(screen, ((WIDTH + SIDEBAR_OFFSET) * 1 / 4 - 30, HEIGHT * 3 / 4 + 20), ((WIDTH + SIDEBAR_OFFSET) * 1 / 4 + 5, HEIGHT * 3 / 4 - 20), WHITE)
+	pygame.display.flip()
+
+
+	# desenha o poligono onde vai ficar o nome do jogo
+	polygon_titulo.scanline(screen, LCI)
+	# escrever o Nome do Jogo
+	write(screen,[int(WIDTH / 2 - 130), int(HEIGHT / 8 - 8)], "Space Invaders", 26)
+	pygame.display.flip()
+
+	# Desenha e Colore o Polygono_botao
+	polygon_botao.scanline(screen, LCI)
+	# Escreve o texto do botão iniciar
+	write(screen, [int(WIDTH / 2 - 5), int(HEIGHT / 2 + 35)], "Iniciar", 16)
+	pygame.display.flip()
+
+	rodando = True
+	while rodando:
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				update()
+				pygame.image.save(screen0, "./output.png")
+				pygame.quit()
+				sys.exit()
+			elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+				mouse_x, mouse_y = event.pos
+				# Verifica se o botão foi pressionado
+				if (mouse_x >= poly_botao[0][0] and mouse_x <= poly_botao[1][0] and mouse_y >= poly_botao[0][1] and mouse_y <= poly_botao[2][1]):
+					main(screen)
+			
 def main(screen):
-	background = pygame.PixelArray(TEXTURES["background"])
+	background = pygame.PixelArray(TEXTURES["background6"])
+
+	pygame.mixer.music.play(-1)
 
 	j = [[0, 0], [WIDTH - 1, HEIGHT - 1]]
 	v = [[0, 0], [WIDTH - 1, HEIGHT - 1]]
@@ -205,7 +301,7 @@ def main(screen):
 				type_pu = 2
 			
 			elif k < 0.15:
-				type_pu = 3
+				type_pu = choice([3, 6])
 			
 			elif k < 0.40:
 				type_pu = 4
@@ -224,21 +320,24 @@ def main(screen):
 	def zoomIn():
 		pygame.mixer.music.pause()
 		dead_sound.play()
-		player = Player()
+		player2 = Player()
 
-		player.translate([-10, -(HEIGHT / 2 - 20)])
+		player2.translate([-10, -(HEIGHT / 2 - 20)])
 
 		x = 0
 		running = True
 		while x < 90 and running:
 			clear(screen, background)
+			
+			write(screen, [WIDTH + 1, 25], f"{enemies_killed:03d}", 16)
+			write(screen, [WIDTH + 1, 90], f"{player.health:03d}", 16)
+			
 			for event in pygame.event.get():
 				if event.type == pygame.QUIT:
 					running = False
 
 			keyspressed = pygame.key.get_pressed()
 			if keyspressed[pygame.K_ESCAPE]:
-				print(enemies_killed)
 				pygame.quit()
 				quit()
 
@@ -247,10 +346,10 @@ def main(screen):
 			v[0][0] -= 0.08
 			v[0][1] -= 0.08
 
-			player.mapToWindow(j, v)
-			player.rotate(8)
-			player.clip(DEFAULT_VIEW)
-			player.scanline(screen, TEX)
+			player2.mapToWindow(j, v)
+			player2.rotate(8)
+			player2.clip(DEFAULT_VIEW)
+			player2.scanline(screen, TEX)
 			update()
 
 			x += 1
@@ -265,30 +364,34 @@ def main(screen):
 			if keyspressed[pygame.K_ESCAPE]:
 				running = False
 
-		print(enemies_killed)
 		pygame.quit()
 		quit()
 
-	write(screen, [WIDTH + 25, 10], f"{enemies_killed:03d}", 16)
 
 	while running:
 		clock.tick(FPS)
+		
 		if froze:
 			clear(screen, None)
 		
 		else:
 			clear(screen, background)
 		
+		
 		if random() <= 0.01 * enemy_spawn_chance and len(enemies) < 5:
 			enemies.append(Enemy(enemy_health, player))
 		
 		keyspressed = pygame.key.get_pressed()
 
-		if (keyspressed[pygame.K_a] or keyspressed[pygame.K_LEFT]) and player.getVertices()[0][0] - 8 >= 0:
-			player.moveX(-player_xvel)
+		if (keyspressed[pygame.K_a] or keyspressed[pygame.K_LEFT]):
+			for i in range(player_xvel):
+				if player.getVertices()[0][0] - 8 >= 0:
+					player.moveX(-1)
 		
-		if (keyspressed[pygame.K_d] or keyspressed[pygame.K_RIGHT]) and player.getVertices()[1][0] + 8 < WIDTH:
-			player.moveX(player_xvel)
+		if (keyspressed[pygame.K_d] or keyspressed[pygame.K_RIGHT]):
+			for i in range(player_xvel):
+				if player.getVertices()[1][0] + 8 < WIDTH:
+					player.moveX(1)
 		
 		if keyspressed[pygame.K_ESCAPE]:
 			running = False
@@ -309,10 +412,9 @@ def main(screen):
 				enemy_death_sound.play()
 				enemies.pop(i)
 				enemies_killed += 1
-				write(screen, [WIDTH + 25, 10], f"{enemies_killed:03d}", 16)
 
 				if enemies_killed % 15 == 0:
-					enemy_yvel += 0.2
+					enemy_yvel += 0.1
 					enemy_health += 0.5
 					enemy_spawn_chance += 1
 
@@ -349,10 +451,9 @@ def main(screen):
 				enemy_death_sound.play()
 				enemies.pop(i)
 				enemies_killed += 1
-				write(screen, [WIDTH + 25, 10], f"{enemies_killed:03d}", 16)
 
 				if enemies_killed % 15 == 0:
-					enemy_yvel += 0.2
+					enemy_yvel += 0.1
 					enemy_health += 0.5
 					enemy_spawn_chance += 1
 
@@ -407,11 +508,10 @@ def main(screen):
 						randomPowerUp(enemy)
 
 					enemies_killed += qt_enemy
-					write(screen, [WIDTH + 25, 10], f"{enemies_killed:03d}", 16)
 
 					if enemies_killed % 15 == 0:
 						if not froze:
-							enemy_yvel += 0.2
+							enemy_yvel += 0.1
 						
 						enemy_health += 0.5
 						enemy_spawn_chance += 1
@@ -444,9 +544,12 @@ def main(screen):
 				elif type_pu == 4:
 					bullet_dmg += 0.5
 				
-				else:
+				elif type_pu == 5:
 					bullets_ps += 1
 					bullets_ps = min(bullets_ps, FPS // 3)
+
+				else:
+					player.health += 1
 
 				continue
 
@@ -472,47 +575,61 @@ def main(screen):
 				freeze_count = 0
 				froze = False
 
+
+		player.mapToWindow(j, v)
+		player.clip(DEFAULT_VIEW)
 		player.scanline(screen, TEX)
-		#player.draw(screen, NEON_GREEN)
 
 		for powerup in powerups:
 			powerup.moveY(1.2 * enemy_yvel)
+			powerup.mapToWindow(j, v)
 			powerup.clip(DEFAULT_VIEW)
-			powerup.scanline(screen, TEX)
-			#powerup.draw(screen, CYAN)
-
+			
+			if powerup.type_pu != 6:
+				powerup.scanline(screen, TEX)
+			else:
+				powerup.scanline(screen, LCI)
+		
 		for enemy in enemies:
 			enemy.moveY(enemy_yvel)
 			if random() < 0.01:
 				enemy.moveX(choice([-3 * enemy_yvel, 3 * enemy_yvel]))
 			
+			enemy.mapToWindow(j, v)
 			enemy.clip(DEFAULT_VIEW)
 			enemy.scanline(screen, TEX)
-			#enemy.draw(screen, NEON_RED)
 
 		for bullet in bullets:
 			bullet.moveY(-bullet_yvel)
+			bullet.mapToWindow(j, v)
 			bullet.clip(DEFAULT_VIEW)
 			bullet.draw(screen, bullet.getColor())
 
+		write(screen, [WIDTH + 1, HEIGHT - 20], f"{str(int(clock.get_fps()))[:2]} FPS", 16)
+		
+		DV.draw(screen, WHITE * 0.8)
+		SV.draw(screen, WHITE * 0.8)
+		
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				pygame.display.flip()
 				pygame.image.save(screen0, "./output2.png")
 				running = False
 
-		DV.draw(screen, WHITE * 0.8)
-		SV.draw(screen, WHITE * 0.8)
+		if froze:
+			write(screen, [WIDTH + 1, 5], "SCORE", 16)
+			write(screen, [WIDTH + 1, 70], "HEALTH", 16)
+
+		write(screen, [WIDTH + 1, 25], f"{enemies_killed:03d}", 16)
+		write(screen, [WIDTH + 1, 90], f"{player.health:03d}", 16)
 
 		update()
 
-		#print(clock.get_fps())
-
 		c = (c + 1) % FPS
-		write(screen, [WIDTH + 25, HEIGHT - 30], str(int(clock.get_fps()))[:2], 16)
 
 	pygame.quit()
 	quit()
 
 if __name__ == "__main__":
 	main(screen)
+	#tela_inicial(screen)

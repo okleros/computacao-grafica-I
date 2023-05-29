@@ -1,5 +1,3 @@
-# computer graphics is fun
-## no it is not fun
-## you might need to install pygame if you haven't already installed
+# you might need to install pygame and numpy if you haven't already installed
 
-# if you're Yuri, you def shouldn't be here
+# if you're Yuri, welcome! (it's a mess)
