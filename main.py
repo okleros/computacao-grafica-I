@@ -597,6 +597,7 @@ def main(screen):
 			if random() < 0.01:
 				enemy.moveX(choice([-3 * enemy_yvel, 3 * enemy_yvel]))
 			
+			enemy.scale([0.1 * enemy.health, 0.1 * enemy.health])			
 			enemy.mapToWindow(j, v)
 			enemy.clip(DEFAULT_VIEW)
 			enemy.scanline(screen, TEX)
