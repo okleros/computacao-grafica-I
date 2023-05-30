@@ -4,4 +4,4 @@
 
 > Você precisará instalar o [numpy](https://numpy.org/install/#python-and-numpy-installation-guide) e o [pygame](https://www.pygame.org/wiki/GettingStarted#pygame-installation) para conseguir executar o jogo.
 
- ## Divirta-se!
+> Divirta-se!
