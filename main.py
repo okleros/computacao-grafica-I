@@ -115,10 +115,11 @@ class Player(Rectangle):
 
 class Enemy(Rectangle):
 	def __init__(self, health, player):
-		super().__init__(randint(int(max(player.center()[0] - 200, 30)), int(min(player.center()[0] + 200, WIDTH - 30))), -14, 14, 14)
+		super().__init__(randint(int(max(player.center()[0] - 200, 30)), int(min(player.center()[0] + 200, WIDTH - 30))), -14, 16, 16)
 		self.health = min(health, 9)
 		self.setTexture(TEXTURES[ENEMIES[int(self.health) - 1]])
 		self.setColor(NEON_RED)
+		self.scale([1 - 0.03 * self.health, 1 - 0.03 * self.health])			
 
 class PowerUp(Rectangle):
 	def __init__(self, p, type_pu):
@@ -597,7 +598,6 @@ def main(screen):
 			if random() < 0.01:
 				enemy.moveX(choice([-3 * enemy_yvel, 3 * enemy_yvel]))
 			
-			enemy.scale([0.1 * enemy.health, 0.1 * enemy.health])			
 			enemy.mapToWindow(j, v)
 			enemy.clip(DEFAULT_VIEW)
 			enemy.scanline(screen, TEX)
