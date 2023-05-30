@@ -37,6 +37,7 @@ laser_sound = load_sound("laser.wav")
 
 bullet_sound.set_volume(0.07)
 bomb_sound.set_volume(0.3)
+laser_sound.set_volume(0.3)
 dead_sound.set_volume(0.3)
 enemy_death_sound.set_volume(0.06)
 
@@ -395,6 +396,7 @@ def main(screen):
 		
 		if keyspressed[pygame.K_ESCAPE]:
 			running = False
+			break
 		
 		if keyspressed[pygame.K_SPACE]:
 			bullets_ps += 1
@@ -631,5 +633,15 @@ def main(screen):
 	quit()
 
 if __name__ == "__main__":
-	main(screen)
-	#tela_inicial(screen)
+	try:
+		if sys.argv[1] == "--skip":
+			main(screen)
+
+		elif sys.argv[1] == "--noskip":
+			tela_inicial(screen)
+
+		else:
+			print("No valid option was given, aborting.")
+			quit()
+	except IndexError:
+		print("\nYou should provide --skip if you want to skip the starting screen, or --noskip if you want to see it.")
